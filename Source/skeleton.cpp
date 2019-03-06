@@ -24,58 +24,13 @@ float focal_length = 500.f;
 
 bool update();
 void draw(screen* screen, vector<Triangle>& triangles);
-void VertexShader( const vec4& v, ivec2& p );
-
-void VertexShader( const vec4& v, ivec2& p )  {
-  float X = (v.x - camera_position.x);
-  float Y = (v.y - camera_position.y);
-  float Z = (v.z - camera_position.z);
-  float x = focal_length*X/Z + SCREEN_WIDTH/2.0f;
-  float y = focal_length*Y/Z + SCREEN_HEIGHT/2.0f;
-  p = ivec2(x, y);
-}
-
-float max(float x, float y) {
-  if (x >= y) return x;
-  else return y;
-}
-
-void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result) {
-  vec2 step = vec2(b - a) / float(max(result.size()-1, 1));
-  vec2 current(a);
-  for (int i = 0; i < result.size(); i++) {
-    result.at(i) = current;
-    current += step;
-  }
-}
-
-void draw_line_SDL(screen* screen, ivec2 a, ivec2 b, vec3 color) {
-  ivec2 delta = glm::abs(a - b);
-  uint pixels = glm::max(delta.x, delta.y) + 1;
-
-  vector<ivec2> line(pixels);
-  interpolate(a, b, line);
-  for (uint i = 0; i < line.size(); i++) {
-    PutPixelSDL(screen, line.at(i).x, line.at(i).y, color);
-  }
-}
-
-void draw_polygon_edges(const vector<vec4>& vertices, screen* screen) {
-  vector<ivec2> projected_vertices(vertices.size());
-  for (uint i = 0; i < projected_vertices.size(); i++) {
-    VertexShader(vertices.at(i), projected_vertices.at(i));
-  }
-  for (uint i = 0; i < vertices.size(); i++) {
-    int j = (i + 1) % vertices.size();
-    vec3 color(0, 1, 1);
-    draw_line_SDL(screen, projected_vertices.at(i), projected_vertices.at(j), color);
-  }
-}
+void vertex_shader(const vec4& v, ivec2& p);
+void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result);
+void draw_line_SDL(screen* screen, ivec2 a, ivec2 b, vec3 color);
+void draw_polygon_edges(const vector<vec4>& vertices, screen* screen);
 
 int main(int argc, char* argv[]) {
-
   screen *screen = InitializeSDL(SCREEN_WIDTH, SCREEN_HEIGHT, FULLSCREEN_MODE);
-
 
   vector<Triangle> triangles;
   // Load Cornell Box
@@ -93,16 +48,63 @@ int main(int argc, char* argv[]) {
 }
 
 // Place your drawing here
-void draw(screen* screen, vector<Triangle>& triangles){/* Clear buffer */
+void draw(screen* screen, vector<Triangle>& triangles) {
+  // Clear buffer
   memset(screen->buffer, 0, screen->height*screen->width*sizeof(uint32_t));
 
-  for( uint32_t i=0; i<triangles.size(); ++i ){
+  for (uint32_t i = 0; i < triangles.size(); i++) {
     vector<vec4> vertices(3);
     vertices[0] = triangles[i].v0;
     vertices[1] = triangles[i].v1;
     vertices[2] = triangles[i].v2;
 
     draw_polygon_edges(vertices, screen);
+  }
+}
+
+void draw_polygon_edges(const vector<vec4>& vertices, screen* screen) {
+  vector<ivec2> projected_vertices(vertices.size());
+  for (uint i = 0; i < projected_vertices.size(); i++) {
+    vertex_shader(vertices.at(i), projected_vertices.at(i));
+  }
+  for (uint i = 0; i < vertices.size(); i++) {
+    int j = (i + 1) % vertices.size();
+    vec3 color(1, 1, 1);
+    draw_line_SDL(screen, projected_vertices.at(i), projected_vertices.at(j), color);
+  }
+}
+
+void vertex_shader(const vec4& v, ivec2& p) {
+  float X = (v.x - camera_position.x);
+  float Y = (v.y - camera_position.y);
+  float Z = (v.z - camera_position.z);
+  float x = focal_length * X/Z + SCREEN_WIDTH /2.0f;
+  float y = focal_length * Y/Z + SCREEN_HEIGHT/2.0f;
+  p = ivec2(x, y);
+}
+
+void draw_line_SDL(screen* screen, ivec2 a, ivec2 b, vec3 color) {
+  ivec2 delta = glm::abs(a - b);
+  uint pixels = glm::max(delta.x, delta.y) + 1;
+
+  vector<ivec2> line(pixels);
+  interpolate(a, b, line);
+  for (uint i = 0; i < line.size(); i++) {
+    PutPixelSDL(screen, line.at(i).x, line.at(i).y, color);
+  }
+}
+
+float max(float x, float y) {
+  if (x >= y) return x;
+  else return y;
+}
+
+void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result) {
+  vec2 step = vec2(b - a) / float(max(result.size()-1, 1));
+  vec2 current(a);
+  for (int i = 0; i < result.size(); i++) {
+    result.at(i) = current;
+    current += step;
   }
 }
 
