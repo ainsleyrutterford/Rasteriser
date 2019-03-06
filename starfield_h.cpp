@@ -30,10 +30,10 @@ void Interpolate( vec3 a, vec3 b, vector<vec3>& result ) ;
 
 int main( int argc, char* argv[] )
 {
-  
+
   screen *screen = InitializeSDL( SCREEN_WIDTH, SCREEN_HEIGHT, FULLSCREEN_MODE );
   t = SDL_GetTicks();	/*Set start value for timer.*/
-  
+
   vector<vec3> stars( 1000 );
   InitStars(stars);
   while( NoQuitMessageSDL() )
@@ -55,7 +55,7 @@ void DrawColourMixer(screen* screen)
 {
   /* Clear buffer */
   memset(screen->buffer, 0, screen->height*screen->width*sizeof(uint32_t));
-    
+
   vec3 top_left(1.0, 0.0, 1.0);
   vec3 top_right(0.2, 0.0, 0.2);
 
@@ -64,7 +64,7 @@ void DrawColourMixer(screen* screen)
 
   vector<vec3> left_side( screen->height );
   Interpolate(top_left, bottom_left, left_side);
-  
+
   vector<vec3> right_side( screen->height );
   Interpolate(top_right, bottom_right, right_side);
 
@@ -81,7 +81,7 @@ void DrawStarfield(screen* screen, vector<vec3>& stars)  {
   //Blacken Space
   memset(screen->buffer, 0, screen->width*screen->height*sizeof(uint32_t));
   //Create Stars at random locations in 3D space
-  
+
   //Project 3D space onto screen
   float ui, vi, f=screen->height/2.0f;
   vec3 star_colour(1.0, 1.0, 1.0);
@@ -125,12 +125,12 @@ void Interpolate( float a, float b, vector<float>& result )  {
   if(result.size() == 0)  {
     result[0] = (a+b)/2.0f;
     return;
-  } 
-  float spacing = (b-a)/(result.size()-1); 
+  }
+  float spacing = (b-a)/(result.size()-1);
   for(uint i = 0; i < result.size()+1; i++)  {
     result[i] = a + i*spacing;
   }
-} 
+}
 
 void Interpolate( vec3 a, vec3 b, vector<vec3>& result )  {
   vector<vector<float> > dim_results(3, vector<float>(result.size()));
@@ -143,5 +143,3 @@ void Interpolate( vec3 a, vec3 b, vector<vec3>& result )  {
     result[i][2] = dim_results[2][i];
   }
 }
-
-
