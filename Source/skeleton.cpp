@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 using namespace std;
+using glm::ivec2;
 using glm::vec3;
 using glm::mat3;
 using glm::vec4;
@@ -13,19 +14,29 @@ using glm::mat4;
 
 SDL_Event event;
 
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 256
+#define SCREEN_WIDTH 1000
+#define SCREEN_HEIGHT 1000
 #define FULLSCREEN_MODE false
 
+vec4 camera_position(0.0, 0.0, -3.0, 1.0);
+float focal_length = 500.f;
+
 bool update();
-void draw(screen* screen);
+void draw(screen* screen, vector<Triangle>& triangles);
+void VertexShader( const vec4& v, ivec2& p );
+
 
 int main(int argc, char* argv[]) {
 
   screen *screen = InitializeSDL(SCREEN_WIDTH, SCREEN_HEIGHT, FULLSCREEN_MODE);
 
+
+  vector<Triangle> triangles;
+  // Load Cornell Box
+  LoadTestModel(triangles);
+
   while (update()) {
-    draw(screen);
+    draw(screen, triangles);
     SDL_Renderframe(screen);
   }
 
@@ -36,15 +47,24 @@ int main(int argc, char* argv[]) {
 }
 
 // Place your drawing here
-void draw(screen* screen) {
-  // Clear buffer
+void draw(screen* screen, vector<Triangle>& triangles){/* Clear buffer */
   memset(screen->buffer, 0, screen->height*screen->width*sizeof(uint32_t));
 
-  vec3 colour(1.0,0.0,0.0);
-  for(int i = 0; i < 1000; i++) {
-    uint32_t x = rand() % screen->width;
-    uint32_t y = rand() % screen->height;
-    PutPixelSDL(screen, x, y, colour);
+  for( uint32_t i=0; i<triangles.size(); ++i ){ 
+    vector<vec4> vertices(3);
+    vertices[0] = triangles[i].v0;
+    vertices[1] = triangles[i].v1;
+    vertices[2] = triangles[i].v2;
+
+    for(int v=0; v<3; ++v){
+      ivec2 projPos;
+      VertexShader( vertices[v], projPos );
+      vec3 color(0,1,1);
+      PutPixelSDL( screen, projPos.x, projPos.y, color );
+      PutPixelSDL( screen, projPos.x-1, projPos.y, color );
+      PutPixelSDL( screen, projPos.x-1, projPos.y-1, color );
+      PutPixelSDL( screen, projPos.x, projPos.y-1, color );
+    }
   }
 }
 
@@ -82,4 +102,14 @@ bool update() {
     }
   }
   return true;
+}
+
+void VertexShader( const vec4& v, ivec2& p )  {
+  float X = (v.x - camera_position.x);
+  float Y = (v.y - camera_position.y);
+  float Z = (v.z - camera_position.z);
+  float x = focal_length*X/Z + SCREEN_WIDTH/2.0f;
+  float y = focal_length*Y/Z + SCREEN_HEIGHT/2.0f;
+  printf("%f %f ", x, y);
+  p = ivec2(x, y);
 }
