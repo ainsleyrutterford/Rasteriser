@@ -30,10 +30,13 @@ void draw(screen* screen, vector<Triangle>& triangles);
 void vertex_shader(const vec4& v, ivec2& p);
 void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result);
 void draw_line_SDL(screen* screen, ivec2 a, ivec2 b, vec3 color);
-void draw_polygon_edges(const vector<vec4>& vertices, screen* screen);
+void draw_polygon_edges(screen* screen, const vector<vec4>& vertices, vec3 color);
 void compute_polygon_rows(const vector<ivec2>& vertex_pixels,
                           vector<ivec2>& left_pixels,
                           vector<ivec2>& right_pixels);
+void draw_rows(screen* screen, const vector<ivec2>& left_pixels,
+               const vector<ivec2>& right_pixels, vec3 color);
+void draw_polygon(screen* screen, const vector<vec4>& vertices, vec3 color);
 
 int main(int argc, char* argv[]) {
   screen *screen = InitializeSDL(SCREEN_WIDTH, SCREEN_HEIGHT, FULLSCREEN_MODE);
@@ -87,18 +90,18 @@ void draw(screen* screen, vector<Triangle>& triangles) {
     vertices[1] = R * triangles[i].v1;
     vertices[2] = R * triangles[i].v2;
 
-    draw_polygon_edges(vertices, screen);
+    draw_polygon_edges(screen, vertices, triangles.at(i).color);
+    draw_polygon(screen, vertices, triangles.at(i).color);
   }
 }
 
-void draw_polygon_edges(const vector<vec4>& vertices, screen* screen) {
+void draw_polygon_edges(screen* screen, const vector<vec4>& vertices, vec3 color) {
   vector<ivec2> projected_vertices(vertices.size());
   for (uint i = 0; i < projected_vertices.size(); i++) {
     vertex_shader(vertices.at(i), projected_vertices.at(i));
   }
   for (uint i = 0; i < vertices.size(); i++) {
     int j = (i + 1) % vertices.size();
-    vec3 color(1, 1, 1);
     draw_line_SDL(screen, projected_vertices.at(i), projected_vertices.at(j), color);
   }
 }
@@ -135,14 +138,15 @@ void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result) {
     result.at(i) = current;
     current += step;
   }
+  result.at(result.size() - 1) = b;
 }
 
 void compute_polygon_rows(const vector<ivec2>& vertex_pixels,
                           vector<ivec2>& left_pixels,
                           vector<ivec2>& right_pixels) {
 
-  float min_y = numeric_limits<int>::max();
-  float max_y = numeric_limits<int>::min();
+  int min_y = numeric_limits<int>::max();
+  int max_y = numeric_limits<int>::min();
   for (int i = 0; i < vertex_pixels.size(); i++) {
     if (vertex_pixels.at(i).y < min_y) min_y = vertex_pixels.at(i).y;
     if (vertex_pixels.at(i).y > max_y) max_y = vertex_pixels.at(i).y;
@@ -174,6 +178,26 @@ void compute_polygon_rows(const vector<ivec2>& vertex_pixels,
       }
     }
   }
+}
+
+void draw_rows(screen* screen, const vector<ivec2>& left_pixels,
+               const vector<ivec2>& right_pixels, vec3 color) {
+  uint N = left_pixels.size();
+  for (uint y = 0; y < N; y++) {
+    for (uint x = left_pixels.at(y).x; x < right_pixels.at(y).x; x++) {
+      PutPixelSDL(screen, x, left_pixels.at(y).y, color);
+    }
+  }
+}
+
+void draw_polygon(screen* screen, const vector<vec4>& vertices, vec3 color) {
+  int V = vertices.size();
+  vector<ivec2> vertex_pixels(V);
+  for (int i = 0; i < V; i++) vertex_shader(vertices[i], vertex_pixels[i]);
+  vector<ivec2> left_pixels;
+  vector<ivec2> right_pixels;
+  compute_polygon_rows(vertex_pixels, left_pixels, right_pixels);
+  draw_rows(screen, left_pixels, right_pixels, color);
 }
 
 // Place updates of parameters here
