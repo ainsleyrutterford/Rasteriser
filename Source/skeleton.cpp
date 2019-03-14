@@ -31,6 +31,9 @@ void vertex_shader(const vec4& v, ivec2& p);
 void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result);
 void draw_line_SDL(screen* screen, ivec2 a, ivec2 b, vec3 color);
 void draw_polygon_edges(const vector<vec4>& vertices, screen* screen);
+void compute_polygon_rows(const vector<ivec2>& vertex_pixels,
+                          vector<ivec2>& left_pixels,
+                          vector<ivec2>& right_pixels);
 
 int main(int argc, char* argv[]) {
   screen *screen = InitializeSDL(SCREEN_WIDTH, SCREEN_HEIGHT, FULLSCREEN_MODE);
@@ -38,6 +41,22 @@ int main(int argc, char* argv[]) {
   vector<Triangle> triangles;
   // Load Cornell Box
   LoadTestModel(triangles);
+
+  vector<ivec2> vertexPixels(3);
+  vertexPixels[0] = ivec2(10, 5);
+  vertexPixels[1] = ivec2( 5,10);
+  vertexPixels[2] = ivec2(15,15);
+  vector<ivec2> leftPixels;
+  vector<ivec2> rightPixels;
+  compute_polygon_rows( vertexPixels, leftPixels, rightPixels );
+  for( int row=0; row<leftPixels.size(); ++row ) {
+    cout << "Start: ("
+         << leftPixels[row].x << ","
+         << leftPixels[row].y << "). "
+         << "End: ("
+         << rightPixels[row].x << ","
+         << rightPixels[row].y << "). " << endl;
+  }
 
   while (update()) {
     draw(screen, triangles);
@@ -115,6 +134,45 @@ void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result) {
   for (int i = 0; i < result.size(); i++) {
     result.at(i) = current;
     current += step;
+  }
+}
+
+void compute_polygon_rows(const vector<ivec2>& vertex_pixels,
+                          vector<ivec2>& left_pixels,
+                          vector<ivec2>& right_pixels) {
+
+  float min_y = numeric_limits<int>::max();
+  float max_y = numeric_limits<int>::min();
+  for (int i = 0; i < vertex_pixels.size(); i++) {
+    if (vertex_pixels.at(i).y < min_y) min_y = vertex_pixels.at(i).y;
+    if (vertex_pixels.at(i).y > max_y) max_y = vertex_pixels.at(i).y;
+  }
+
+  left_pixels.resize(max_y - min_y + 1);
+  right_pixels.resize(max_y - min_y + 1);
+
+  for (int i = 0; i < left_pixels.size(); i++) {
+    left_pixels.at(i).x = numeric_limits<int>::max();
+    right_pixels.at(i).x = numeric_limits<int>::min();
+  }
+
+  for (int i = 0; i < vertex_pixels.size(); i++) {
+    ivec2 a = vertex_pixels.at(i);
+    ivec2 b = vertex_pixels.at((i + 1) % vertex_pixels.size());
+    ivec2 delta = glm::abs(a - b);
+    uint pixels = glm::max(delta.x, delta.y) + 1;
+    vector<ivec2> line(pixels);
+    interpolate(a, b, line);
+    for (uint j = 0; j < pixels; j++) {
+      if (left_pixels.at(line.at(j).y - min_y).x > line.at(j).x) {
+        left_pixels.at(line.at(j).y - min_y).x = line.at(j).x;
+        left_pixels.at(line.at(j).y - min_y).y = line.at(j).y;
+      }
+      if (right_pixels.at(line.at(j).y - min_y).x < line.at(j).x) {
+        right_pixels.at(line.at(j).y - min_y).x = line.at(j).x;
+        right_pixels.at(line.at(j).y - min_y).y = line.at(j).y;
+      }
+    }
   }
 }
 
