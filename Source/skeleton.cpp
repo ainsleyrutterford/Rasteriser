@@ -135,10 +135,9 @@ void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result) {
   vec2 step = vec2(b - a) / float(max(result.size()-1, 1));
   vec2 current(a);
   for (int i = 0; i < result.size(); i++) {
-    result.at(i) = current;
+    result.at(i) = round(current);
     current += step;
   }
-  result.at(result.size() - 1) = b;
 }
 
 void compute_polygon_rows(const vector<ivec2>& vertex_pixels,
@@ -169,8 +168,6 @@ void compute_polygon_rows(const vector<ivec2>& vertex_pixels,
     interpolate(a, b, line);
     for (uint j = 0; j < pixels; j++) {
       int row = line.at(j).y - min_y;
-      if (row < 0) row = 0;
-      if (row > left_pixels.size() - 1) row = left_pixels.size() - 1;
       if (left_pixels.at(row).x > line.at(j).x) {
         left_pixels.at(row).x = line.at(j).x;
         left_pixels.at(row).y = line.at(j).y;
