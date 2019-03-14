@@ -168,13 +168,16 @@ void compute_polygon_rows(const vector<ivec2>& vertex_pixels,
     vector<ivec2> line(pixels);
     interpolate(a, b, line);
     for (uint j = 0; j < pixels; j++) {
-      if (left_pixels.at(line.at(j).y - min_y).x > line.at(j).x) {
-        left_pixels.at(line.at(j).y - min_y).x = line.at(j).x;
-        left_pixels.at(line.at(j).y - min_y).y = line.at(j).y;
+      int row = line.at(j).y - min_y;
+      if (row < 0) row = 0;
+      if (row > left_pixels.size() - 1) row = left_pixels.size() - 1;
+      if (left_pixels.at(row).x > line.at(j).x) {
+        left_pixels.at(row).x = line.at(j).x;
+        left_pixels.at(row).y = line.at(j).y;
       }
-      if (right_pixels.at(line.at(j).y - min_y).x < line.at(j).x) {
-        right_pixels.at(line.at(j).y - min_y).x = line.at(j).x;
-        right_pixels.at(line.at(j).y - min_y).y = line.at(j).y;
+      if (right_pixels.at(row).x < line.at(j).x) {
+        right_pixels.at(row).x = line.at(j).x;
+        right_pixels.at(row).y = line.at(j).y;
       }
     }
   }
