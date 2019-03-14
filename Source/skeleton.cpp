@@ -45,22 +45,6 @@ int main(int argc, char* argv[]) {
   // Load Cornell Box
   LoadTestModel(triangles);
 
-  vector<ivec2> vertexPixels(3);
-  vertexPixels[0] = ivec2(10, 5);
-  vertexPixels[1] = ivec2( 5,10);
-  vertexPixels[2] = ivec2(15,15);
-  vector<ivec2> leftPixels;
-  vector<ivec2> rightPixels;
-  compute_polygon_rows( vertexPixels, leftPixels, rightPixels );
-  for( int row=0; row<leftPixels.size(); ++row ) {
-    cout << "Start: ("
-         << leftPixels[row].x << ","
-         << leftPixels[row].y << "). "
-         << "End: ("
-         << rightPixels[row].x << ","
-         << rightPixels[row].y << "). " << endl;
-  }
-
   while (update()) {
     draw(screen, triangles);
     SDL_Renderframe(screen);
@@ -126,13 +110,8 @@ void draw_line_SDL(screen* screen, ivec2 a, ivec2 b, vec3 color) {
   }
 }
 
-float max(float x, float y) {
-  if (x >= y) return x;
-  else return y;
-}
-
 void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result) {
-  vec2 step = vec2(b - a) / float(max(result.size()-1, 1));
+  vec2 step = vec2(b - a) / float(fmax(result.size()-1, 1));
   vec2 current(a);
   for (int i = 0; i < result.size(); i++) {
     result.at(i) = round(current);
