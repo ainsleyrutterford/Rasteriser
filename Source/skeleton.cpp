@@ -4,6 +4,7 @@
 #include "SDLauxiliary.h"
 #include "TestModelH.h"
 #include <stdint.h>
+#include <glm/gtc/type_ptr.hpp>
 
 using namespace std;
 using glm::ivec2;
@@ -15,12 +16,14 @@ using glm::mat4;
 
 SDL_Event event;
 
-#define SCREEN_WIDTH 1000
-#define SCREEN_HEIGHT 1000
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 800
 #define FULLSCREEN_MODE false
 
-vec4 camera_position(0.0, 0.0, -3.0, 1.0);
+vec4 camera_position(1.0, 1.0, -3.0, 1.0);
 float focal_length = 500.f;
+float yaw = 0.f;
+float pitch = 0.f;
 
 bool update();
 void draw(screen* screen, vector<Triangle>& triangles);
@@ -52,11 +55,18 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   // Clear buffer
   memset(screen->buffer, 0, screen->height*screen->width*sizeof(uint32_t));
 
+  float r[16] = {cos(yaw), sin(pitch)*sin(yaw),  sin(yaw)*cos(pitch), 1.0f,
+                 0.0f,     cos(pitch),          -sin(pitch),          1.0f,
+                -sin(yaw), cos(yaw)*sin(pitch),  cos(pitch)*cos(yaw), 1.0f,
+                 1.0f,     1.0f,                 1.0f,                1.0f};
+  mat4 R;
+  memcpy(glm::value_ptr(R), r, sizeof(r));
+
   for (uint32_t i = 0; i < triangles.size(); i++) {
     vector<vec4> vertices(3);
-    vertices[0] = triangles[i].v0;
-    vertices[1] = triangles[i].v1;
-    vertices[2] = triangles[i].v2;
+    vertices[0] = R * triangles[i].v0;
+    vertices[1] = R * triangles[i].v1;
+    vertices[2] = R * triangles[i].v2;
 
     draw_polygon_edges(vertices, screen);
   }
@@ -125,15 +135,19 @@ bool update() {
       switch(key_code) {
         case SDLK_UP:
           // Move camera forward
+          pitch -= 0.1;
           break;
         case SDLK_DOWN:
           // Move camera backwards
+          pitch += 0.1;
           break;
         case SDLK_LEFT:
           // Move camera left
+          yaw += 0.1;
           break;
         case SDLK_RIGHT:
           // Move camera right
+          yaw -= 0.1;
           break;
         case SDLK_ESCAPE:
           // Move camera quit
