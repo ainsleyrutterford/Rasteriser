@@ -23,7 +23,7 @@ SDL_Event event;
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 800
 #define FULLSCREEN_MODE false
-
+float depth_buffer[SCREEN_WIDTH][SCREEN_HEIGHT];
 
 vec4 camera_position(1.0, 1.0, -3.0, 1.0);
 float focal_length = 500.f;
@@ -47,8 +47,6 @@ void draw_polygon(screen* screen, const vector<vec4>& vertices, vec3 color);
 int main(int argc, char* argv[]) {
   screen *screen = InitializeSDL(SCREEN_WIDTH, SCREEN_HEIGHT, FULLSCREEN_MODE);
 
-  float depth_buffer[SCREEN_WIDTH][SCREEN_HEIGHT];
-
   vector<Triangle> triangles;
   // Load Cornell Box
   LoadTestModel(triangles);
@@ -66,8 +64,12 @@ int main(int argc, char* argv[]) {
 
 // Place your drawing here
 void draw(screen* screen, vector<Triangle>& triangles) {
-  // Clear buffer
+  // Clear screen buffer
   memset(screen->buffer, 0, screen->height*screen->width*sizeof(uint32_t));
+
+  // Clear depth_buffer
+  memset(depth_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(float));
+
   float r[16] = {cos(yaw), sin(pitch)*sin(yaw),  sin(yaw)*cos(pitch), 1.0f,
                  0.0f,     cos(pitch),          -sin(pitch),          1.0f,
                 -sin(yaw), cos(yaw)*sin(pitch),  cos(pitch)*cos(yaw), 1.0f,
@@ -96,7 +98,7 @@ void draw_polygon_edges(screen* screen, const vector<vec4>& vertices, vec3 color
 
   for (uint i = 0; i < vertices.size(); i++) {
     int j = (i + 1) % vertices.size();
-    draw_line_SDL(screen, projected_vertices.at(i), projected_vertices.at(j), color);
+    // draw_line_SDL(screen, projected_vertices.at(i), projected_vertices.at(j), color);
   }
   printf("dpe f\n");
 
@@ -161,7 +163,21 @@ void interpolate(Pixel a_pixel, Pixel b_pixel, vector<Pixel>& result) {
 
 }
 
+void interpolate(Pixel a_pixel, Pixel b_pixel, vector<float>& result) {
+  printf("i3 \n");
 
+  float a = 1/a_pixel.z_inv;
+  float b = 1/b_pixel.z_inv;
+
+  float step = (b - a) / float(fmax(result.size()-1, 1));
+  float current = a;
+  for (uint i = 0; i < result.size(); i++) {
+    result.at(i) = current;
+    current += step;
+  }
+  printf("i3 f \n");
+
+}
 
 void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
                           vector<Pixel>& left_pixels,
@@ -221,9 +237,21 @@ void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
 void draw_rows(screen* screen, const vector<Pixel>& left_pixels,
                const vector<Pixel>& right_pixels, vec3 color) {
   uint N = left_pixels.size();
+
+  // Iterate through each row
   for (uint y = 0; y < N; y++) {
+
+    // Calculate the depths of the pixels in this row
+    vector<float> depths(right_pixels.at(y).x - left_pixels.at(y).x);
+    interpolate(left_pixels.at(y), right_pixels.at(y), depths);
+
+    // Iterate through each pixel in this row
     for (int x = left_pixels.at(y).x; x < right_pixels.at(y).x; x++) {
-      PutPixelSDL(screen, x, left_pixels.at(y).y, color);
+      // If the pixel is closer than any before, draw it.
+      if (1/depths.at(x-left_pixels.at(y).x) > depth_buffer[x][left_pixels.at(y).y]) {
+        PutPixelSDL(screen, x, left_pixels.at(y).y, color);
+        depth_buffer[x][left_pixels.at(y).y] = 1/depths.at(x-left_pixels.at(y).x);
+      }
     }
   }
 }
