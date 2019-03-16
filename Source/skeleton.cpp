@@ -83,7 +83,7 @@ void draw(screen* screen, vector<Triangle>& triangles) {
     vertices[1] = R * triangles[i].v1;
     vertices[2] = R * triangles[i].v2;
 
-    draw_polygon_edges(screen, vertices, triangles.at(i).color);
+    // draw_polygon_edges(screen, vertices, triangles.at(i).color);
     draw_polygon(screen, vertices, triangles.at(i).color);
   }
 }
@@ -98,7 +98,7 @@ void draw_polygon_edges(screen* screen, const vector<vec4>& vertices, vec3 color
 
   for (uint i = 0; i < vertices.size(); i++) {
     int j = (i + 1) % vertices.size();
-    // draw_line_SDL(screen, projected_vertices.at(i), projected_vertices.at(j), color);
+    draw_line_SDL(screen, projected_vertices.at(i), projected_vertices.at(j), color);
   }
   printf("dpe f\n");
 
@@ -172,7 +172,7 @@ void interpolate(Pixel a_pixel, Pixel b_pixel, vector<float>& result) {
   float step = (b - a) / float(fmax(result.size()-1, 1));
   float current = a;
   for (uint i = 0; i < result.size(); i++) {
-    result.at(i) = current;
+    result.at(i) = 1/current;
     current += step;
   }
   printf("i3 f \n");
@@ -239,18 +239,20 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels,
   uint N = left_pixels.size();
 
   // Iterate through each row
-  for (uint y = 0; y < N; y++) {
+  for (uint row = 0; row < N; row++) {
 
     // Calculate the depths of the pixels in this row
-    vector<float> depths(right_pixels.at(y).x - left_pixels.at(y).x);
-    interpolate(left_pixels.at(y), right_pixels.at(y), depths);
+    vector<float> inverses(right_pixels.at(row).x - left_pixels.at(row).x + 1);
+    interpolate(left_pixels.at(row), right_pixels.at(row), inverses);
 
     // Iterate through each pixel in this row
-    for (int x = left_pixels.at(y).x; x < right_pixels.at(y).x; x++) {
+    for (int x = left_pixels.at(row).x; x < right_pixels.at(row).x; x++) {
+      int depth_index = x - left_pixels.at(row).x;
+      int y = left_pixels.at(row).y;
       // If the pixel is closer than any before, draw it.
-      if (1/depths.at(x-left_pixels.at(y).x) > depth_buffer[x][left_pixels.at(y).y]) {
-        PutPixelSDL(screen, x, left_pixels.at(y).y, color);
-        depth_buffer[x][left_pixels.at(y).y] = 1/depths.at(x-left_pixels.at(y).x);
+      if (inverses.at(depth_index) > depth_buffer[x][y]) {
+        PutPixelSDL(screen, x, y, color);
+        depth_buffer[x][y] = inverses.at(depth_index);
       }
     }
   }
