@@ -50,17 +50,17 @@ class Pixel
       z_inv = p.z_inv;
     }
 
-    void *operator new(size_t size) 
-    { 
-        void *p = ::new Pixel(0, 0, 0.0f);  
+    // void *operator new(size_t size) 
+    // { 
+    //     void *p = ::new Pixel(0, 0, 0.0f);  
       
-        return p; 
-    } 
+    //     return p; 
+    // } 
   
-    void operator delete(void *p) 
-    { 
-        free(p); 
-    } 
+    // void operator delete(void *p) 
+    // { 
+    //     free(p); 
+    // } 
 
     operator vec3()  {
       return vec3(this->x, this->y, this->z_inv);

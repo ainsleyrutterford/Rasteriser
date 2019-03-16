@@ -189,7 +189,7 @@ void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
     Pixel a = vertex_pixels.at(i);
     Pixel b = vertex_pixels.at((i + 1) % vertex_pixels.size());
 
-    Pixel delta = a-b;
+    Pixel delta = Pixel::abs(a-b);
 
     uint pixels = glm::max(delta.x, delta.y) + 1;
     printf("cpr 3 \n");
