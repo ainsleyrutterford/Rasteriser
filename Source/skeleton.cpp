@@ -76,7 +76,7 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   memset(screen->buffer, 0, screen->height*screen->width*sizeof(uint32_t));
 
   // Clear depth_buffer
-  memset(depth_buffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(float));
+  memset(depth_buffer, 0, SCREEN_HEIGHT * SCREEN_WIDTH * sizeof(float));
 
   float r[16] = {cos(yaw), sin(pitch)*sin(yaw),  sin(yaw)*cos(pitch), 1.0f,
                  0.0f,     cos(pitch),          -sin(pitch),          1.0f,
@@ -103,7 +103,7 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   }
 }
 
-void vertex_shader(const Vertex& v, Pixel& p) {
+void vertex_shader(const Vertex& v, Pixel& p, vec3 illumination) {
   printf("vs\n");
 
   float X = (v.position.x - camera_position.x);
@@ -112,17 +112,21 @@ void vertex_shader(const Vertex& v, Pixel& p) {
   float x = focal_length * X/Z + SCREEN_WIDTH /2.0f;
   float y = focal_length * Y/Z + SCREEN_HEIGHT/2.0f;
   float z_inv = 1/Z;
-  p = Pixel(int(x), int(y), z_inv);
+  p = Pixel((int) x, (int) y, z_inv, illumination);
   printf("vs f\n");
 }
 
-void pixel_shader(screen* screen, const Pixel& p, vec3 color)  {
+void pixel_shader(screen* screen, const Pixel& p, vec3 color) {
+  printf("ps \n");
   int x = p.x;
   int y = p.y;
-  if (p.z_inv > depth_buffer[y][x])  {
+  printf("y: %d, x: %d, p.z_inv: %f\n", y, x, p.z_inv);
+  if (p.z_inv > depth_buffer[y][x]) {
     depth_buffer[y][x] = p.z_inv;
+    printf("ps 1\n");
     PutPixelSDL(screen, x, y, color);
   }
+  printf("ps f\n");
 }
 
 void draw_line_SDL(screen* screen, Pixel a, Pixel b, vec3 color) {
@@ -141,20 +145,18 @@ void draw_line_SDL(screen* screen, Pixel a, Pixel b, vec3 color) {
 
 }
 
-void interpolate(Pixel a_pixel, Pixel b_pixel, vector<Pixel>& result) {
+void interpolate(Pixel a, Pixel b, vector<Pixel>& result) {
   printf("i2 \n");
 
-  vec3 a = (vec3)a_pixel;
-  vec3 b = (vec3)b_pixel;
-
-  vec3 step = vec3(b - a) / float(fmax(result.size()-1, 1));
-  vec3 current(a);
+  Pixel step = (b - a) / float(fmax(result.size()-1, 1));
+  printf("int s.x %d s.y %d\n", step.x, step.y);
+  Pixel current(a);
+  printf("int a.x: %d, a.y: %d  b.x: %d, b.y: %d\n", a.x, a.y, b.x, b.y);
   for (uint i = 0; i < result.size(); i++) {
     result.at(i) = Pixel(current);
     current += step;
   }
   printf("i2 f \n");
-
 }
 
 void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
@@ -186,34 +188,52 @@ void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
     Pixel delta = Pixel::abs(a-b);
 
     uint pixels = glm::max(delta.x, delta.y) + 1;
+    printf("cpr delta.x: %d, delta.y: %d \n", delta.x, delta.y);
+    printf("cpr a.x: %d, a.y: %d, b.x: %d, b.y: %d\n", a.x, a.y, b.x, b.y);
+
+
     printf("cpr 3 \n");
 
-    vector<Pixel> line(pixels, Pixel(0, 0, 0.0f));
+    vector<Pixel> line(pixels, Pixel(0, 0, 0.f, vec3(0.f, 0.f, 0.f)));
 
     printf("cpr 4 \n");
 
 
     interpolate(a, b, line);
-    for (uint j = 0; j < pixels; j++) {
+    for (uint i = 0; i < line.size(); i++)  {
+      printf("cpr li: %d x: %d\n", i, line[i].x );
+      printf("cpr li: %d y: %d\n", i, line[i].y );
+    }
+
+    for (uint j = 0; j < line.size(); j++) {
       int row = line.at(j).y - min_y;
+      printf("row %d\n", row);
       if (left_pixels.at(row).x > line.at(j).x) {
         left_pixels.at(row).x = line.at(j).x;
         left_pixels.at(row).y = line.at(j).y;
         left_pixels.at(row).z_inv = line.at(j).z_inv;
       }
       if (right_pixels.at(row).x < line.at(j).x) {
+
         right_pixels.at(row).x = line.at(j).x;
         right_pixels.at(row).y = line.at(j).y;
         right_pixels.at(row).z_inv = line.at(j).z_inv;
       }
+
     }
+
   }
-  printf("cpr f \n");
+  left_pixels.at(10).x = 180;
+  for (uint i = 0; i < left_pixels.size(); i++)  {
+    printf("cpr lpi: %d x: %d\n", i, left_pixels[i].x );
+    printf("cpr rpi: %d x: %d\n", i, right_pixels[i].x );
+  }
 
 }
 
 void draw_rows(screen* screen, const vector<Pixel>& left_pixels,
                const vector<Pixel>& right_pixels, vec3 color) {
+  printf("dr\n");
   uint N = left_pixels.size();
 
   // Iterate through each row
@@ -221,15 +241,19 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels,
 
     // Calculate the depths of the pixels in this row
     vector<Pixel> row_pixels(right_pixels.at(row).x - left_pixels.at(row).x + 1);
+    printf("dr left row x: %d, left row y: %d, right row x: %d, right row y: %d\n",
+    left_pixels.at(row).x, left_pixels.at(row).y, right_pixels.at(row).x, right_pixels.at(row).y);
     interpolate(left_pixels.at(row), right_pixels.at(row), row_pixels);
 
     for (uint i = 0; i < row_pixels.size(); i++)  {
       pixel_shader(screen, row_pixels[i], color);
     }
   }
+  printf("dr f\n");
 }
 
 void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec3 color) {
+  printf("dp \n");
   uint V = vertices.size();
   vector<Pixel> vertex_pixels(V);
   for (uint i = 0; i < V; i++) {
@@ -240,12 +264,15 @@ void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec3 color) {
     vec3 D = (vec3) (light_power * (float) fmax(glm::dot(r, n) , 0)) /
              (float) (4 * M_PI * radius * radius);
 
-    vertex_shader(vertices[i], vertex_pixels[i]);
+    vec3 R = 0.2f * (D + indirect_power_per_area);
+
+    vertex_shader(vertices[i], vertex_pixels[i], R);
   }
   vector<Pixel> left_pixels;
   vector<Pixel> right_pixels;
   compute_polygon_rows(vertex_pixels, left_pixels, right_pixels);
   draw_rows(screen, left_pixels, right_pixels, color);
+  printf("dp f \n");
 }
 
 // Place updates of parameters here
