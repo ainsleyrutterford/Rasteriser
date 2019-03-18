@@ -6,6 +6,7 @@
 #include "Pixel.cpp"
 #include <stdint.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <math.h>
 
 using namespace std;
 using glm::ivec2;
@@ -23,13 +24,19 @@ SDL_Event event;
 
 struct Vertex {
   vec4 position;
+  vec4 normal;
+  vec2 reflectance;
 };
 
 float depth_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
-vec4 camera_position(1.0, 1.0, -3.0, 1.0);
+vec4 camera_position(1.f, 1.f, -3.f, 1.f);
 float focal_length = 500.f;
 float yaw = 0.f;
 float pitch = 0.f;
+
+vec4 light_position(0.f, -0.5f, -0.7f, 1.f);
+vec3 light_power = 1.1f * vec3(1.f, 1.f, 1.f);
+vec3 indirect_power_per_area = 0.5f * vec3(1.f, 1.f, 1.f);
 
 bool update();
 void draw(screen* screen, vector<Triangle>& triangles);
@@ -84,7 +91,14 @@ void draw(screen* screen, vector<Triangle>& triangles) {
     vertices[1].position = R * triangles[i].v1;
     vertices[2].position = R * triangles[i].v2;
 
-    // draw_polygon_edges(screen, vertices, triangles.at(i).color);
+    vertices[0].normal = triangles[i].normal;
+    vertices[1].normal = triangles[i].normal;
+    vertices[2].normal = triangles[i].normal;
+
+    vertices[0].reflectance = vec2(0.1f, 0.1f);
+    vertices[1].reflectance = vec2(0.1f, 0.1f);
+    vertices[2].reflectance = vec2(0.1f, 0.1f);
+
     draw_polygon(screen, vertices, triangles.at(i).color);
   }
 }
@@ -218,7 +232,16 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels,
 void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec3 color) {
   uint V = vertices.size();
   vector<Pixel> vertex_pixels(V);
-  for (uint i = 0; i < V; i++) vertex_shader(vertices[i], vertex_pixels[i]);
+  for (uint i = 0; i < V; i++) {
+    vec4 r = light_position - vertices[i].position;
+    float radius = length(r);
+    vec4 n = vertices[i].normal;
+
+    vec3 D = (vec3) (light_power * (float) fmax(glm::dot(r, n) , 0)) /
+             (float) (4 * M_PI * radius * radius);
+
+    vertex_shader(vertices[i], vertex_pixels[i]);
+  }
   vector<Pixel> left_pixels;
   vector<Pixel> right_pixels;
   compute_polygon_rows(vertex_pixels, left_pixels, right_pixels);
