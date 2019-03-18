@@ -15,14 +15,17 @@ using glm::mat3;
 using glm::vec4;
 using glm::mat4;
 
-
 SDL_Event event;
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 800
 #define FULLSCREEN_MODE false
-float depth_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 
+struct Vertex {
+  vec4 position;
+};
+
+float depth_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 vec4 camera_position(1.0, 1.0, -3.0, 1.0);
 float focal_length = 500.f;
 float yaw = 0.f;
@@ -30,18 +33,17 @@ float pitch = 0.f;
 
 bool update();
 void draw(screen* screen, vector<Triangle>& triangles);
-void vertex_shader(const vec4& v, Pixel& p);
+void vertex_shader(const Vertex& v, Pixel& p);
 void pixel_shader(screen* screen, const Pixel& p, vec3 color);
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result);
 void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result);
 void draw_line_SDL(screen* screen, Pixel a, Pixel b, vec3 color);
-void draw_polygon_edges(screen* screen, const vector<vec4>& vertices, vec3 color);
 void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
                           vector<Pixel>& left_pixels,
                           vector<Pixel>& right_pixels);
 void draw_rows(screen* screen, const vector<Pixel>& left_pixels,
                const vector<Pixel>& right_pixels, vec3 color);
-void draw_polygon(screen* screen, const vector<vec4>& vertices, vec3 color);
+void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec3 color);
 
 int main(int argc, char* argv[]) {
   screen *screen = InitializeSDL(SCREEN_WIDTH, SCREEN_HEIGHT, FULLSCREEN_MODE);
@@ -77,38 +79,22 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   memcpy(glm::value_ptr(R), r, sizeof(r));
 
   for (uint32_t i = 0; i < triangles.size(); i++) {
-    vector<vec4> vertices(3);
-    vertices[0] = R * triangles[i].v0;
-    vertices[1] = R * triangles[i].v1;
-    vertices[2] = R * triangles[i].v2;
+    vector<Vertex> vertices(3);
+    vertices[0].position = R * triangles[i].v0;
+    vertices[1].position = R * triangles[i].v1;
+    vertices[2].position = R * triangles[i].v2;
 
     // draw_polygon_edges(screen, vertices, triangles.at(i).color);
     draw_polygon(screen, vertices, triangles.at(i).color);
   }
 }
 
-void draw_polygon_edges(screen* screen, const vector<vec4>& vertices, vec3 color) {
-  printf("dpe\n");
-  vector<Pixel> projected_vertices(vertices.size());
-
-  for (uint i = 0; i < projected_vertices.size(); i++) {
-    vertex_shader(vertices.at(i), projected_vertices.at(i));
-  }
-
-  for (uint i = 0; i < vertices.size(); i++) {
-    int j = (i + 1) % vertices.size();
-    draw_line_SDL(screen, projected_vertices.at(i), projected_vertices.at(j), color);
-  }
-  printf("dpe f\n");
-
-}
-
-void vertex_shader(const vec4& v, Pixel& p) {
+void vertex_shader(const Vertex& v, Pixel& p) {
   printf("vs\n");
 
-  float X = (v.x - camera_position.x);
-  float Y = (v.y - camera_position.y);
-  float Z = (v.z - camera_position.z);
+  float X = (v.position.x - camera_position.x);
+  float Y = (v.position.y - camera_position.y);
+  float Z = (v.position.z - camera_position.z);
   float x = focal_length * X/Z + SCREEN_WIDTH /2.0f;
   float y = focal_length * Y/Z + SCREEN_HEIGHT/2.0f;
   float z_inv = 1/Z;
@@ -229,7 +215,7 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels,
   }
 }
 
-void draw_polygon(screen* screen, const vector<vec4>& vertices, vec3 color) {
+void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec3 color) {
   uint V = vertices.size();
   vector<Pixel> vertex_pixels(V);
   for (uint i = 0; i < V; i++) vertex_shader(vertices[i], vertex_pixels[i]);

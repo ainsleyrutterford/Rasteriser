@@ -1,14 +1,13 @@
 using glm::vec3;
 
-
-class Pixel 
-{
+class Pixel {
   public:
     int x;
     int y;
     float z_inv;
 
     Pixel() {}
+
     Pixel(int x1, int y1, float z_inv1) {
       x = x1;
       y = y1;
@@ -50,18 +49,6 @@ class Pixel
       z_inv = p.z_inv;
     }
 
-    // void *operator new(size_t size) 
-    // { 
-    //     void *p = ::new Pixel(0, 0, 0.0f);  
-      
-    //     return p; 
-    // } 
-  
-    // void operator delete(void *p) 
-    // { 
-    //     free(p); 
-    // } 
-
     operator vec3()  {
       return vec3(this->x, this->y, this->z_inv);
     }
@@ -73,5 +60,4 @@ class Pixel
       pixel.z_inv = p.z_inv;
       return pixel;
     }
-
 };
