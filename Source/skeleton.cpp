@@ -16,14 +16,12 @@ using glm::vec4;
 using glm::mat4;
 
 
-
-
 SDL_Event event;
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 800
 #define FULLSCREEN_MODE false
-float depth_buffer[SCREEN_WIDTH][SCREEN_HEIGHT];
+float depth_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 
 vec4 camera_position(1.0, 1.0, -3.0, 1.0);
 float focal_length = 500.f;
@@ -33,6 +31,7 @@ float pitch = 0.f;
 bool update();
 void draw(screen* screen, vector<Triangle>& triangles);
 void vertex_shader(const vec4& v, Pixel& p);
+void pixel_shader(screen* screen, const Pixel& p, vec3 color);
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result);
 void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result);
 void draw_line_SDL(screen* screen, Pixel a, Pixel b, vec3 color);
@@ -115,7 +114,15 @@ void vertex_shader(const vec4& v, Pixel& p) {
   float z_inv = 1/Z;
   p = Pixel(int(x), int(y), z_inv);
   printf("vs f\n");
+}
 
+void pixel_shader(screen* screen, const Pixel& p, vec3 color)  {
+  int x = p.x;
+  int y = p.y;
+  if (p.z_inv > depth_buffer[y][x])  {
+    depth_buffer[y][x] = p.z_inv;
+    PutPixelSDL(screen, x, y, color);
+  }
 }
 
 void draw_line_SDL(screen* screen, Pixel a, Pixel b, vec3 color) {
@@ -134,19 +141,6 @@ void draw_line_SDL(screen* screen, Pixel a, Pixel b, vec3 color) {
 
 }
 
-void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result) {
-  printf("i \n");
-
-  vec2 step = vec2(b - a) / float(fmax(result.size()-1, 1));
-  vec2 current(a);
-  for (uint i = 0; i < result.size(); i++) {
-    result.at(i) = round(current);
-    current += step;
-  }
-  printf("i f\n");
-
-}
-
 void interpolate(Pixel a_pixel, Pixel b_pixel, vector<Pixel>& result) {
   printf("i2 \n");
 
@@ -160,22 +154,6 @@ void interpolate(Pixel a_pixel, Pixel b_pixel, vector<Pixel>& result) {
     current += step;
   }
   printf("i2 f \n");
-
-}
-
-void interpolate(Pixel a_pixel, Pixel b_pixel, vector<float>& result) {
-  printf("i3 \n");
-
-  float a = 1/a_pixel.z_inv;
-  float b = 1/b_pixel.z_inv;
-
-  float step = (b - a) / float(fmax(result.size()-1, 1));
-  float current = a;
-  for (uint i = 0; i < result.size(); i++) {
-    result.at(i) = 1/current;
-    current += step;
-  }
-  printf("i3 f \n");
 
 }
 
@@ -242,18 +220,11 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels,
   for (uint row = 0; row < N; row++) {
 
     // Calculate the depths of the pixels in this row
-    vector<float> inverses(right_pixels.at(row).x - left_pixels.at(row).x + 1);
-    interpolate(left_pixels.at(row), right_pixels.at(row), inverses);
+    vector<Pixel> row_pixels(right_pixels.at(row).x - left_pixels.at(row).x + 1);
+    interpolate(left_pixels.at(row), right_pixels.at(row), row_pixels);
 
-    // Iterate through each pixel in this row
-    for (int x = left_pixels.at(row).x; x < right_pixels.at(row).x; x++) {
-      int depth_index = x - left_pixels.at(row).x;
-      int y = left_pixels.at(row).y;
-      // If the pixel is closer than any before, draw it.
-      if (inverses.at(depth_index) > depth_buffer[x][y]) {
-        PutPixelSDL(screen, x, y, color);
-        depth_buffer[x][y] = inverses.at(depth_index);
-      }
+    for (uint i = 0; i < row_pixels.size(); i++)  {
+      pixel_shader(screen, row_pixels[i], color);
     }
   }
 }
