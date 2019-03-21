@@ -29,7 +29,7 @@ struct Vertex {
 };
 
 float depth_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
-vec4 camera_position(1.f, 1.f, -3.f, 1.f);
+vec4 camera_position(0.f, 0.f, -3.f, 1.f);
 float focal_length = 500.f;
 float yaw = 0.f;
 float pitch = 0.f;
@@ -87,9 +87,9 @@ void draw(screen* screen, vector<Triangle>& triangles) {
 
   for (uint32_t i = 0; i < triangles.size(); i++) {
     vector<Vertex> vertices(3);
-    vertices[0].position = R * triangles[i].v0;
-    vertices[1].position = R * triangles[i].v1;
-    vertices[2].position = R * triangles[i].v2;
+    vertices[0].position =  triangles[i].v0;
+    vertices[1].position =  triangles[i].v1;
+    vertices[2].position =  triangles[i].v2;
 
     vertices[0].normal = triangles[i].normal;
     vertices[1].normal = triangles[i].normal;
@@ -122,7 +122,7 @@ void pixel_shader(screen* screen, const Pixel& p, vec3 color) {
   int y = p.y;
   if (p.z_inv > depth_buffer[y][x]) {
     depth_buffer[y][x] = p.z_inv;
-    PutPixelSDL(screen, x, y, color);
+    PutPixelSDL(screen, x, y, p.illumination);
   }
   // printf("ps f\n");
 }
@@ -195,6 +195,7 @@ void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
         left_pixels.at(row).x = line.at(j).x;
         left_pixels.at(row).y = line.at(j).y;
         left_pixels.at(row).z_inv = line.at(j).z_inv;
+        left_pixels.at(row).illumination = line.at(j).illumination;
 
       }
       if (right_pixels.at(row).x < line.at(j).x) {
@@ -203,6 +204,7 @@ void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
         right_pixels.at(row).x = line.at(j).x;
         right_pixels.at(row).y = line.at(j).y;
         right_pixels.at(row).z_inv = line.at(j).z_inv;
+        right_pixels.at(row).illumination = line.at(j).illumination;
       }
     }
 
@@ -238,10 +240,9 @@ void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec3 color) {
     float radius = length(r);
     vec4 n = vertices[i].normal;
 
-    vec3 D = (vec3) (light_power * (float) fmax(glm::dot(r, n) , 0)) /
+    vec3 D = (vec3) ( 12.f*light_power * (float) fmax(glm::dot(r, n) , 0)) /
              (float) (4 * M_PI * radius * radius);
-
-    vec3 R = 0.2f * (D + indirect_power_per_area);
+    vec3 R = color* (D + indirect_power_per_area) ;
 
     vertex_shader(vertices[i], vertex_pixels[i], R);
   }
