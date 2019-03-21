@@ -23,6 +23,7 @@ class Pixel {
       this->illumination = illumination;
     }
 
+
     Pixel operator +(const Pixel& p) {
       Pixel pixel;
       pixel.x = this->x + p.x;
@@ -54,6 +55,15 @@ class Pixel {
       pixel.y = this->y / f;
       pixel.z_inv = this->z_inv * f;
       pixel.illumination = this->illumination / f;
+      return pixel;
+    }
+
+    Pixel operator *(float f)  {
+      Pixel pixel;
+      pixel.x = this->x * f;
+      pixel.y = this->y * f;
+      pixel.z_inv = this->z_inv / f;
+      pixel.illumination = this->illumination * f;
       return pixel;
     }
 
