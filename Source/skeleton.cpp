@@ -35,7 +35,7 @@ float yaw = 0.f;
 float pitch = 0.f;
 
 vec4 light_position(0.f, -0.5f, -0.7f, 1.f);
-vec3 light_power = 1.1f * vec3(1.f, 1.f, 1.f);
+vec3 light_power = 18.f * vec3(1.f, 1.f, 1.f);
 vec3 indirect_power_per_area = 0.5f * vec3(1.f, 1.f, 1.f);
 
 bool update();
@@ -240,9 +240,9 @@ void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec3 color) {
     float radius = length(r);
     vec4 n = vertices[i].normal;
 
-    vec3 D = (vec3) ( 12.f*light_power * (float) fmax(glm::dot(r, n) , 0)) /
+    vec3 D = (vec3) (light_power * (float) fmax(glm::dot(r, n) , 0)) /
              (float) (4 * M_PI * radius * radius);
-    vec3 R = color* (D + indirect_power_per_area) ;
+    vec3 R = color * (D + indirect_power_per_area) ;
 
     vertex_shader(vertices[i], vertex_pixels[i], R);
   }
