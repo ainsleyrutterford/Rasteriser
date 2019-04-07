@@ -211,7 +211,7 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels,
 
   // Iterate through each row
   for (uint row = 0; row < N; row++) {
-    
+
     // Calculate the depths of the pixels in this row
     vector<Pixel> row_pixels(right_pixels.at(row).x - left_pixels.at(row).x + 1);
     interpolate(left_pixels.at(row), right_pixels.at(row), row_pixels);
@@ -245,19 +245,9 @@ void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec3 color) {
   // dec_buf(); print_buf(); printf("draw_polygon end\n"); //debugprint
 }
 
-void print_buf() {
-  for (int i = 0; i < indent_buffer; i++) {
-    printf("  ");
-  }
-}
-
-void inc_buf() {
-  indent_buffer += 2;
-}
-
-void dec_buf() {
-  indent_buffer -= 2;
-}
+void print_buf() { for (int i = 0; i < indent_buffer; i++) printf("  "); }
+void inc_buf() { indent_buffer += 2; }
+void dec_buf() { indent_buffer -= 2; }
 
 // Place updates of parameters here
 bool update() {
