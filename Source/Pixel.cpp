@@ -23,7 +23,6 @@ class Pixel {
       this->illumination = illumination;
     }
 
-
     Pixel operator +(const Pixel& p) {
       Pixel pixel;
       pixel.x = this->x + p.x;
@@ -40,7 +39,7 @@ class Pixel {
       this->illumination += p.illumination;
     }
 
-    Pixel operator -( const Pixel& p ) {
+    Pixel operator -(const Pixel& p) {
       Pixel pixel;
       pixel.x = this->x - p.x;
       pixel.y = this->y - p.y;
@@ -49,7 +48,7 @@ class Pixel {
       return pixel;
     }
 
-    Pixel operator /(float f)  {
+    Pixel operator /(float f) {
       Pixel pixel;
       pixel.x = this->x / f;
       pixel.y = this->y / f;
@@ -58,7 +57,7 @@ class Pixel {
       return pixel;
     }
 
-    Pixel operator *(float f)  {
+    Pixel operator *(float f) {
       Pixel pixel;
       pixel.x = this->x * f;
       pixel.y = this->y * f;
@@ -67,7 +66,7 @@ class Pixel {
       return pixel;
     }
 
-    static Pixel abs(const Pixel& p)  {
+    static Pixel abs(const Pixel& p) {
       Pixel pixel;
       pixel.x = (p.x>0)? p.x :-p.x;
       pixel.y = (p.y>0) ? p.y :-p.y;
