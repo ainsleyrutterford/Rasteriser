@@ -183,17 +183,16 @@ void vertex_shader(const Vertex& v, Pixel& p) {
   float Z = (v.position.z - camera_position.z);
   float x = focal_length * X/Z + SCREEN_WIDTH /2.0f;
   float y = focal_length * Y/Z + SCREEN_HEIGHT/2.0f;
-  float z_inv = 1/Z;
-  p = Pixel((int) x, (int) y, z_inv, v.position);
+  float z = Z;
+  p = Pixel((int) x, (int) y, z, v.position);
   // dec_buf(); print_buf(); printf("vertex_shader end\n"); //debugprint
 }
 
 void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 current_reflectance) {
   vec4 r = light_position - p.pos_3D;
 
-  float radius = length(r); ////////////WATCH OUT!! Only works for w=1
+  float radius = length(r); // WATCH OUT! Only works for w == 1
   vec4 n = current_normal;
-
 
   vec3 D = (vec3) (light_power * (float) fmax(glm::dot(r, n) , 0)) /
                                  (float) (4 * M_PI * radius * radius);
@@ -201,16 +200,19 @@ void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 curr
 
   int x = p.x;
   int y = p.y;
-  if (p.z_inv > depth_buffer[y][x]) {
-    depth_buffer[y][x] = p.z_inv;
+  if (1/p.z > depth_buffer[y][x]) {
+    depth_buffer[y][x] = 1/p.z;
     PutPixelSDL(screen, x, y, R);
   }
 }
 
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result) {
   // print_buf(); printf("interpolate start\n"); inc_buf(); //debugprint
+  float steps = float(fmax(result.size() - 1, 1));
   for (uint i = 0; i < result.size(); i++) {
-    result.at(i) = a + ((b - a)*((float)i)) / float(fmax(result.size()-1, 1));
+    result.at(i) = a + ((b - a) * ((float)i)) / steps;
+    result[i].pos_3D = result[i].z * (a.pos_3D/a.z + ((b.pos_3D/b.z - a.pos_3D/a.z) * ((float)i)) / steps);
+    result[i].pos_3D.w = 1.f;
   }
   // dec_buf(); print_buf(); printf("interpolate end\n"); //debugprint
 }
