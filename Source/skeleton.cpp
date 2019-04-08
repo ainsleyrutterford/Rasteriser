@@ -209,44 +209,14 @@ void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 curr
 
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result) {
   // print_buf(); printf("interpolate start\n"); inc_buf(); //debugprint
-
   for (uint i = 0; i < result.size(); i++) {
     result.at(i) = a + ((b - a)*((float)i)) / float(fmax(result.size()-1, 1));
   }
   // dec_buf(); print_buf(); printf("interpolate end\n"); //debugprint
 }
 
-
-// void draw_line_SDL(screen* screen, Pixel a, Pixel b) {
-//   // print_buf(); printf("draw_line_SDL start\n"); inc_buf(); //debugprint
-
-//   Pixel delta = Pixel::abs(a - b);
-//   uint pixels = glm::max(delta.x, delta.y) + 1;
-
-//   vector<Pixel> line(pixels);
-//   interpolate(a, b, line);
-//   for (uint i = 0; i < line.size(); i++) {
-//     PutPixelSDL(screen, line.at(i).x, line.at(i).y, color);
-//   }
-//   // dec_buf(); print_buf(); printf("draw_line_SDL end\n"); //debugprint
-// }
-
-
-
-
-
-void print_buf() { for (int i = 0; i < indent_buffer; i++) printf("  "); }
-void inc_buf() { indent_buffer += 2; }
-void dec_buf() { indent_buffer -= 2; }
-
 // Place updates of parameters here
 bool update() {
-  // static int t = SDL_GetTicks();
-  // // Compute frame time
-  // int t2 = SDL_GetTicks();
-  // float dt = float(t2-t);
-  // t = t2;
-
   SDL_Event e;
   while(SDL_PollEvent(&e)) {
     if (e.type == SDL_QUIT) {
@@ -270,6 +240,18 @@ bool update() {
           // Move camera right
           yaw -= 0.1;
           break;
+        case SDLK_w:
+          light_position.z += 0.2;
+          break;
+        case SDLK_s:
+          light_position.z -= 0.2;
+          break;
+        case SDLK_a:
+          light_position.x -= 0.2;
+          break;
+        case SDLK_d:
+          light_position.x += 0.2;
+          break;
         case SDLK_ESCAPE:
           // Move camera quit
           return false;
@@ -278,3 +260,7 @@ bool update() {
   }
   return true;
 }
+
+void print_buf() { for (int i = 0; i < indent_buffer; i++) printf("  "); }
+void inc_buf() { indent_buffer += 2; }
+void dec_buf() { indent_buffer -= 2; }
