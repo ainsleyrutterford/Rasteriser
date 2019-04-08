@@ -1,11 +1,11 @@
-using glm::vec3;
+using glm::vec4;
 
 class Pixel {
   public:
     int x;
     int y;
     float z_inv;
-    vec3 illumination;
+    vec4 pos_3D;
 
     Pixel() {}
 
@@ -13,14 +13,14 @@ class Pixel {
       this->x = p.x;
       this->y = p.y;
       this->z_inv = p.z_inv;
-      this->illumination = p.illumination;
+      this->pos_3D = p.pos_3D;
     }
 
-    Pixel(int x, int y, float z_inv, vec3 illumination) {
+    Pixel(int x, int y, float z_inv, vec4 pos_3D) {
       this->x = x;
       this->y = y;
       this->z_inv = z_inv;
-      this->illumination = illumination;
+      this->pos_3D = pos_3D;
     }
 
     Pixel operator +(const Pixel& p) {
@@ -28,7 +28,8 @@ class Pixel {
       pixel.x = this->x + p.x;
       pixel.y = this->y + p.y;
       pixel.z_inv = 1/(1/this->z_inv + 1/(p.z_inv));
-      pixel.illumination = this->illumination + p.illumination;
+      pixel.pos_3D = this->pos_3D + p.pos_3D;
+      pixel.pos_3D.w = 1.f;
       return pixel;
     }
 
@@ -36,7 +37,9 @@ class Pixel {
       this->x = this->x + p.x;
       this->y = this->y + p.y;
       this->z_inv = 1/(1/this->z_inv + 1/(p.z_inv));
-      this->illumination += p.illumination;
+      this->pos_3D += p.pos_3D;
+      this->pos_3D.w = 1.f;
+
     }
 
     Pixel operator -(const Pixel& p) {
@@ -44,7 +47,9 @@ class Pixel {
       pixel.x = this->x - p.x;
       pixel.y = this->y - p.y;
       pixel.z_inv = 1/(1/this->z_inv - 1/(p.z_inv));
-      pixel.illumination = this->illumination - p.illumination;
+      pixel.pos_3D = this->pos_3D - p.pos_3D;
+      pixel.pos_3D.w = 1.f;
+
       return pixel;
     }
 
@@ -53,7 +58,9 @@ class Pixel {
       pixel.x = this->x / f;
       pixel.y = this->y / f;
       pixel.z_inv = this->z_inv * f;
-      pixel.illumination = this->illumination / f;
+      pixel.pos_3D = this->pos_3D / f;
+      pixel.pos_3D.w = 1.f;
+
       return pixel;
     }
 
@@ -62,7 +69,9 @@ class Pixel {
       pixel.x = this->x * f;
       pixel.y = this->y * f;
       pixel.z_inv = this->z_inv / f;
-      pixel.illumination = this->illumination * f;
+      pixel.pos_3D = this->pos_3D * f;
+      pixel.pos_3D.w = 1.f;
+
       return pixel;
     }
 
@@ -71,7 +80,7 @@ class Pixel {
       pixel.x = (p.x>0)? p.x :-p.x;
       pixel.y = (p.y>0) ? p.y :-p.y;
       pixel.z_inv = p.z_inv;
-      pixel.illumination = p.illumination;
+      pixel.pos_3D = p.pos_3D;
       return pixel;
     }
 };
