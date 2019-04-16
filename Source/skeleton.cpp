@@ -100,15 +100,9 @@ vector<Triangle> clip_space(vector<Triangle>& triangles) {
   vector<Triangle> clipped_triangles;
   for (uint i = 0; i < triangles.size(); i++) {
     Triangle triangle = triangles[i];
-
-    triangle.v0   = triangles[i].v0 - camera_position;
-    triangle.v0.w = focal_length/triangles[i].v0.z;
-
-    triangle.v1   = triangles[i].v1 - camera_position;
-    triangle.v1.w = focal_length/triangles[i].v1.z;
-
-    triangle.v2   = triangles[i].v2 - camera_position;
-    triangle.v2.w = focal_length/triangles[i].v2.z;
+    triangle.v0.w = triangles[i].v0.z/focal_length;
+    triangle.v1.w = triangles[i].v1.z/focal_length;
+    triangle.v2.w = triangles[i].v2.z/focal_length;
 
     clipped_triangles.push_back(triangle);
   }
