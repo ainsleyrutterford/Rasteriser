@@ -72,12 +72,13 @@ int main(int argc, char* argv[]) {
 }
 
 void draw(screen* screen, vector<Triangle>& triangles) {
-  // Clear screen buffer
-  memset(screen->buffer, 0, screen->height*screen->width*sizeof(uint32_t));
-  // Clear depth_buffer
-  memset(depth_buffer, 0, SCREEN_HEIGHT * SCREEN_WIDTH * sizeof(float));
+  // Clear screen buffer and depth_buffer
+  memset(screen->buffer, 0, screen->height * screen->width * sizeof(uint32_t));
+  memset(depth_buffer  , 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(float   ));
 
   vector<Triangle> clipped_triangles = clip_space(triangles);
+
+  // Clip triangles here. Everything else should be more or less the same.
 
   for (uint32_t i = 0; i < clipped_triangles.size(); i++) {
     vector<Vertex> vertices(3);
@@ -128,7 +129,6 @@ void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec4 current_n
 
 void vertex_shader(const Vertex& v, Pixel& p) {
   // print_buf(); printf("vertex_shader start\n"); inc_buf(); //debugprint
-
   float X = (v.position.x - camera_position.x);
   float Y = (v.position.y - camera_position.y);
   float Z = (v.position.z - camera_position.z);
@@ -240,19 +240,19 @@ bool update() {
       switch(key_code) {
         case SDLK_UP:
           // Move camera forward
-          pitch -= 0.1;
+          camera_position.z += 0.1;
           break;
         case SDLK_DOWN:
           // Move camera backwards
-          pitch += 0.1;
+          camera_position.z -= 0.1;
           break;
         case SDLK_LEFT:
           // Move camera left
-          yaw += 0.1;
+          camera_position.x -= 0.1;
           break;
         case SDLK_RIGHT:
           // Move camera right
-          yaw -= 0.1;
+          camera_position.x += 0.1;
           break;
         case SDLK_w:
           light_position.z += 0.2;
