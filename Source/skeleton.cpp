@@ -73,28 +73,18 @@ int main(int argc, char* argv[]) {
 void draw(screen* screen, vector<Triangle>& triangles) {
   // Clear screen buffer
   memset(screen->buffer, 0, screen->height*screen->width*sizeof(uint32_t));
-
   // Clear depth_buffer
   memset(depth_buffer, 0, SCREEN_HEIGHT * SCREEN_WIDTH * sizeof(float));
 
-  float r[16] = {cos(yaw), sin(pitch)*sin(yaw),  sin(yaw)*cos(pitch), 1.0f,
-                 0.0f,     cos(pitch),          -sin(pitch),          1.0f,
-                -sin(yaw), cos(yaw)*sin(pitch),  cos(pitch)*cos(yaw), 1.0f,
-                 1.0f,     1.0f,                 1.0f,                1.0f};
-  mat4 R;
-  memcpy(glm::value_ptr(R), r, sizeof(r));
-
-  vec4 current_normal;
-  vec3 current_reflectance;
-
   for (uint32_t i = 0; i < triangles.size(); i++) {
     vector<Vertex> vertices(3);
+    
     vertices[0].position = triangles[i].v0;
     vertices[1].position = triangles[i].v1;
     vertices[2].position = triangles[i].v2;
 
-    current_normal      = triangles[i].normal;
-    current_reflectance = triangles[i].color;
+    vec4 current_normal      = triangles[i].normal;
+    vec3 current_reflectance = triangles[i].color;
 
     draw_polygon(screen, vertices, current_normal, current_reflectance);
   }
@@ -112,6 +102,19 @@ void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec4 current_n
   compute_polygon_rows(vertex_pixels, left_pixels, right_pixels);
   draw_rows(screen, left_pixels, right_pixels, current_normal, current_reflectance);
   // dec_buf(); print_buf(); printf("draw_polygon end\n"); //debugprint
+}
+
+void vertex_shader(const Vertex& v, Pixel& p) {
+  // print_buf(); printf("vertex_shader start\n"); inc_buf(); //debugprint
+
+  float X = (v.position.x - camera_position.x);
+  float Y = (v.position.y - camera_position.y);
+  float Z = (v.position.z - camera_position.z);
+  float x = focal_length * X/Z + SCREEN_WIDTH /2.0f;
+  float y = focal_length * Y/Z + SCREEN_HEIGHT/2.0f;
+  float z = Z;
+  p = Pixel((int) x, (int) y, z, v.position);
+  // dec_buf(); print_buf(); printf("vertex_shader end\n"); //debugprint
 }
 
 void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
@@ -173,19 +176,6 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels, const vector<Pi
     }
   }
   // dec_buf(); print_buf(); printf("draw_rows end\n"); //debugprint
-}
-
-void vertex_shader(const Vertex& v, Pixel& p) {
-  // print_buf(); printf("vertex_shader start\n"); inc_buf(); //debugprint
-
-  float X = (v.position.x - camera_position.x);
-  float Y = (v.position.y - camera_position.y);
-  float Z = (v.position.z - camera_position.z);
-  float x = focal_length * X/Z + SCREEN_WIDTH /2.0f;
-  float y = focal_length * Y/Z + SCREEN_HEIGHT/2.0f;
-  float z = Z;
-  p = Pixel((int) x, (int) y, z, v.position);
-  // dec_buf(); print_buf(); printf("vertex_shader end\n"); //debugprint
 }
 
 void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 current_reflectance) {
