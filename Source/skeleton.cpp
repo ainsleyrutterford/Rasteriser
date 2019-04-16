@@ -40,6 +40,7 @@ vec3 indirect_power_per_area = 0.5f * vec3(1.f, 1.f, 1.f);
 
 bool update();
 void draw(screen* screen, vector<Triangle>& triangles);
+vector<Triangle> clip_space(vector<Triangle>& triangles);
 void vertex_shader(const Vertex& v, Pixel& p);
 void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 current_reflectance);
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result);
@@ -76,18 +77,39 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   // Clear depth_buffer
   memset(depth_buffer, 0, SCREEN_HEIGHT * SCREEN_WIDTH * sizeof(float));
 
-  for (uint32_t i = 0; i < triangles.size(); i++) {
-    vector<Vertex> vertices(3);
-    
-    vertices[0].position = triangles[i].v0;
-    vertices[1].position = triangles[i].v1;
-    vertices[2].position = triangles[i].v2;
+  vector<Triangle> clipped_triangles = clip_space(triangles);
 
-    vec4 current_normal      = triangles[i].normal;
-    vec3 current_reflectance = triangles[i].color;
+  for (uint32_t i = 0; i < clipped_triangles.size(); i++) {
+    vector<Vertex> vertices(3);
+
+    vertices[0].position = clipped_triangles[i].v0;
+    vertices[1].position = clipped_triangles[i].v1;
+    vertices[2].position = clipped_triangles[i].v2;
+
+    vec4 current_normal      = clipped_triangles[i].normal;
+    vec3 current_reflectance = clipped_triangles[i].color;
 
     draw_polygon(screen, vertices, current_normal, current_reflectance);
   }
+}
+
+vector<Triangle> clip_space(vector<Triangle>& triangles) {
+  vector<Triangle> clipped_triangles;
+  for (uint i = 0; i < triangles.size(); i++) {
+    Triangle triangle = triangles[i];
+
+    triangle.v0   = triangles[i].v0 - camera_position;
+    triangle.v0.w = focal_length/triangles[i].v0.z;
+
+    triangle.v1   = triangles[i].v1 - camera_position;
+    triangle.v1.w = focal_length/triangles[i].v1.z;
+
+    triangle.v2   = triangles[i].v2 - camera_position;
+    triangle.v2.w = focal_length/triangles[i].v2.z;
+
+    clipped_triangles.push_back(triangle);
+  }
+  return clipped_triangles;
 }
 
 void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec4 current_normal, vec3 current_reflectance ) {
