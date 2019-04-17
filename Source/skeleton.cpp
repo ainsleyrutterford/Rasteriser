@@ -100,8 +100,13 @@ vector<Triangle> clip_space(vector<Triangle>& triangles) {
   vector<Triangle> clipped_triangles;
   for (uint i = 0; i < triangles.size(); i++) {
     Triangle triangle = triangles[i];
+    triangle.v0   = triangles[i].v0 - camera_position;
     triangle.v0.w = triangles[i].v0.z/focal_length;
+
+    triangle.v1   = triangles[i].v1 - camera_position;
     triangle.v1.w = triangles[i].v1.z/focal_length;
+
+    triangle.v2   = triangles[i].v2 - camera_position;
     triangle.v2.w = triangles[i].v2.z/focal_length;
 
     clipped_triangles.push_back(triangle);
@@ -155,13 +160,10 @@ void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec4 current_n
 
 void vertex_shader(const Vertex& v, Pixel& p) {
   // print_buf(); printf("vertex_shader start\n"); inc_buf(); //debugprint
-  float X = (v.position.x - camera_position.x);
-  float Y = (v.position.y - camera_position.y);
-  float Z = (v.position.z - camera_position.z);
-  float x = focal_length * X/Z + SCREEN_WIDTH /2.0f;
-  float y = focal_length * Y/Z + SCREEN_HEIGHT/2.0f;
-  float z = Z;
-  p = Pixel((int) x, (int) y, z, v.position);
+  float x = focal_length * v.position.x/v.position.z + SCREEN_WIDTH /2.0f;
+  float y = focal_length * v.position.y/v.position.z + SCREEN_HEIGHT/2.0f;
+  float z = v.position.z;
+  p = Pixel((int) x, (int) y, z, v.position + camera_position);
   // dec_buf(); print_buf(); printf("vertex_shader end\n"); //debugprint
 }
 
