@@ -41,7 +41,7 @@ vec3 indirect_power_per_area = 0.5f * vec3(1.f, 1.f, 1.f);
 bool update();
 void draw(screen* screen, vector<Triangle>& triangles);
 vector<Triangle> clip_space(vector<Triangle>& triangles);
-void clip(vector<Triangle>& triangles);
+vector<Triangle> clip(vector<Triangle>& triangles);
 void vertex_shader(const Vertex& v, Pixel& p);
 void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 current_reflectance);
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result);
@@ -79,8 +79,7 @@ void draw(screen* screen, vector<Triangle>& triangles) {
 
   vector<Triangle> clipped_triangles = clip_space(triangles);
 
-  // Clip triangles here. Everything else should be more or less the same.
-  // clip(clipped_triangles);
+  clipped_triangles = clip(clipped_triangles);
 
   for (uint32_t i = 0; i < clipped_triangles.size(); i++) {
     vector<Vertex> vertices(3);
@@ -100,48 +99,49 @@ vector<Triangle> clip_space(vector<Triangle>& triangles) {
   vector<Triangle> clipped_triangles;
   for (uint i = 0; i < triangles.size(); i++) {
     Triangle triangle = triangles[i];
-    triangle.v0   = triangles[i].v0 - camera_position;
-    triangle.v0.w = triangles[i].v0.z/focal_length;
+    triangle.v0   = triangle.v0 - camera_position;
+    triangle.v0.w = triangle.v0.z/focal_length;
 
-    triangle.v1   = triangles[i].v1 - camera_position;
-    triangle.v1.w = triangles[i].v1.z/focal_length;
+    triangle.v1   = triangle.v1 - camera_position;
+    triangle.v1.w = triangle.v1.z/focal_length;
 
-    triangle.v2   = triangles[i].v2 - camera_position;
-    triangle.v2.w = triangles[i].v2.z/focal_length;
+    triangle.v2   = triangle.v2 - camera_position;
+    triangle.v2.w = triangle.v2.z/focal_length;
 
     clipped_triangles.push_back(triangle);
   }
   return clipped_triangles;
 }
 
-void clip(vector<Triangle>& triangles) {
+vector<Triangle> clip(vector<Triangle>& triangles) {
   vector<Triangle> clipped_triangles;
   float x_max = SCREEN_WIDTH  / 2;
   float y_max = SCREEN_HEIGHT / 2;
   for (uint i = 0; i < triangles.size(); i++) {
     Triangle triangle = triangles[i];
     bool on_screen = true;
-    if (triangles[i].v0.x >= +triangle.v0.w * x_max ||
-        triangles[i].v0.x <= -triangle.v0.w * x_max ||
-        triangles[i].v0.y >= +triangle.v0.w * y_max ||
-        triangles[i].v0.y <= -triangle.v0.w * y_max) {
-      on_screen = false;
-    }
-    if (triangles[i].v1.x >= +triangle.v1.w * x_max ||
-        triangles[i].v1.x <= -triangle.v1.w * x_max ||
-        triangles[i].v1.y >= +triangle.v1.w * y_max ||
-        triangles[i].v1.y <= -triangle.v1.w * y_max) {
-      on_screen = false;
-    }
-    if (triangles[i].v2.x >= +triangle.v2.w * x_max ||
-        triangles[i].v2.x <= -triangle.v2.w * x_max ||
-        triangles[i].v2.y >= +triangle.v2.w * y_max ||
-        triangles[i].v2.y <= -triangle.v2.w * y_max) {
-      on_screen = false;
-    }
+
+    if (triangle.v0.x >=  triangle.v0.w * x_max) on_screen = false;
+    if (triangle.v1.x >=  triangle.v1.w * x_max) on_screen = false;
+    if (triangle.v2.x >=  triangle.v2.w * x_max) on_screen = false;
+    if (triangle.v0.x <= -triangle.v0.w * x_max) on_screen = false;
+    if (triangle.v1.x <= -triangle.v1.w * x_max) on_screen = false;
+    if (triangle.v2.x <= -triangle.v2.w * x_max) on_screen = false;
+
+    if (triangle.v0.y >=  triangle.v0.w * y_max) on_screen = false;
+    if (triangle.v1.y >=  triangle.v1.w * y_max) on_screen = false;
+    if (triangle.v2.y >=  triangle.v2.w * y_max) on_screen = false;
+    if (triangle.v0.y <= -triangle.v0.w * y_max) on_screen = false;
+    if (triangle.v1.y <= -triangle.v1.w * y_max) on_screen = false;
+    if (triangle.v2.y <= -triangle.v2.w * y_max) on_screen = false;
+
+    if (triangle.v0.z <= focal_length/x_max) on_screen = false;
+    if (triangle.v1.z <= focal_length/x_max) on_screen = false;
+    if (triangle.v2.z <= focal_length/x_max) on_screen = false;
+
     if (on_screen) clipped_triangles.push_back(triangle);
   }
-  triangles = clipped_triangles;
+  return clipped_triangles;
 }
 
 void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec4 current_normal, vec3 current_reflectance ) {
