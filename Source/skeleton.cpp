@@ -119,11 +119,26 @@ vector<Triangle> clip(vector<Triangle>& triangles) {
   float y_max = SCREEN_HEIGHT / 2;
   for (uint i = 0; i < triangles.size(); i++) {
     Triangle triangle = triangles[i];
+
+    bool v0 = true;
+    bool v1 = true;
+    bool v2 = true;
+
     bool on_screen = true;
 
-    if (triangle.v0.x >=  triangle.v0.w * x_max) on_screen = false;
-    if (triangle.v1.x >=  triangle.v1.w * x_max) on_screen = false;
-    if (triangle.v2.x >=  triangle.v2.w * x_max) on_screen = false;
+    if (triangle.v0.x >=  triangle.v0.w * x_max) {
+      v0 = false;
+      on_screen = false;
+    }
+    if (triangle.v1.x >=  triangle.v1.w * x_max) {
+      v1 = false;
+      on_screen = false;
+    }
+    if (triangle.v2.x >=  triangle.v2.w * x_max) {
+      v2 = false;
+      on_screen = false;
+    }
+
     if (triangle.v0.x <= -triangle.v0.w * x_max) on_screen = false;
     if (triangle.v1.x <= -triangle.v1.w * x_max) on_screen = false;
     if (triangle.v2.x <= -triangle.v2.w * x_max) on_screen = false;
@@ -140,6 +155,39 @@ vector<Triangle> clip(vector<Triangle>& triangles) {
     if (triangle.v2.z <= focal_length/x_max) on_screen = false;
 
     if (on_screen) clipped_triangles.push_back(triangle);
+
+    if (v0 && !v1 && !v2) {
+      float t1 = (triangle.v0.w - 2 * triangle.v0.x / SCREEN_WIDTH) /
+                 ((triangle.v0.w - 2 * triangle.v0.x / SCREEN_WIDTH) - (triangle.v1.w - 2 * triangle.v1.x / SCREEN_WIDTH));
+      float t2 = (triangle.v0.w - 2 * triangle.v0.x / SCREEN_WIDTH) /
+                 ((triangle.v0.w - 2 * triangle.v0.x / SCREEN_WIDTH) - (triangle.v2.w - 2 * triangle.v2.x / SCREEN_WIDTH));
+      vec4 i1 = triangle.v0 + t1*0.999f * (triangle.v1 - triangle.v0);
+      vec4 i2 = triangle.v0 + t2*0.999f * (triangle.v2 - triangle.v0);
+      Triangle new_triangle(triangle.v0, i1, i2, triangle.color);
+      clipped_triangles.push_back(new_triangle);
+    }
+
+    if (!v0 && v1 && !v2) {
+      float t0 = (triangle.v1.w - 2 * triangle.v1.x / SCREEN_WIDTH) /
+                 ((triangle.v1.w - 2 * triangle.v1.x / SCREEN_WIDTH) - (triangle.v0.w - 2 * triangle.v0.x / SCREEN_WIDTH));
+      float t2 = (triangle.v1.w - 2 * triangle.v1.x / SCREEN_WIDTH) /
+                 ((triangle.v1.w - 2 * triangle.v1.x / SCREEN_WIDTH) - (triangle.v2.w - 2 * triangle.v2.x / SCREEN_WIDTH));
+      vec4 i0 = triangle.v1 + t0*0.999f * (triangle.v0 - triangle.v1);
+      vec4 i2 = triangle.v1 + t2*0.999f * (triangle.v2 - triangle.v1);
+      Triangle new_triangle(triangle.v1, i0, i2, triangle.color);
+      clipped_triangles.push_back(new_triangle);
+    }
+
+    if (!v0 && !v1 && v2) {
+      float t0 = (triangle.v2.w - 2 * triangle.v2.x / SCREEN_WIDTH) /
+                 ((triangle.v2.w - 2 * triangle.v2.x / SCREEN_WIDTH) - (triangle.v0.w - 2 * triangle.v0.x / SCREEN_WIDTH));
+      float t1 = (triangle.v2.w - 2 * triangle.v2.x / SCREEN_WIDTH) /
+                 ((triangle.v2.w - 2 * triangle.v2.x / SCREEN_WIDTH) - (triangle.v1.w - 2 * triangle.v1.x / SCREEN_WIDTH));
+      vec4 i0 = triangle.v2 + t0*0.999f * (triangle.v0 - triangle.v2);
+      vec4 i1 = triangle.v2 + t1*0.999f * (triangle.v1 - triangle.v2);
+      Triangle new_triangle(i0, i1, triangle.v2, triangle.color);
+      clipped_triangles.push_back(new_triangle);
+    }
   }
   return clipped_triangles;
 }
