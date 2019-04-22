@@ -113,22 +113,22 @@ vector<Triangle> clip_space(vector<Triangle>& triangles) {
   return clipped_triangles;
 }
 
-void two_offscreen(vector<Triangle>& triangles, Triangle triangle, vec4 v0, vec4 v1, vec4 v2) {
-  float t1 = 0.999f * (v0.w - 2 * v0.x / SCREEN_WIDTH) /
-             ((v0.w - 2 * v0.x / SCREEN_WIDTH) - (v1.w - 2 * v1.x / SCREEN_WIDTH));
-  float t2 = 0.999f * (v0.w - 2 * v0.x / SCREEN_WIDTH) /
-             ((v0.w - 2 * v0.x / SCREEN_WIDTH) - (v2.w - 2 * v2.x / SCREEN_WIDTH));
+void two_offscreen(int side, vector<Triangle>& triangles, Triangle triangle, vec4 v0, vec4 v1, vec4 v2) {
+  float t1 = 0.999f * (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) /
+             ((v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) - (v1.w - 2 * v1.x / (side * SCREEN_WIDTH)));
+  float t2 = 0.999f * (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) /
+             ((v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) - (v2.w - 2 * v2.x / (side * SCREEN_WIDTH)));
   vec4 i1 = v0 + t1 * (v1 - v0);
   vec4 i2 = v0 + t2 * (v2 - v0);
   Triangle new_triangle(v0, i1, i2, triangle.color); new_triangle.normal = triangle.normal;
   triangles.push_back(new_triangle);
 }
 
-void one_offscreen(vector<Triangle>& triangles, Triangle triangle, vec4 v0, vec4 v1, vec4 v2) {
-  float t1 = 0.999f * (v1.w - 2 * v1.x / SCREEN_WIDTH) /
-             ((v1.w - 2 * v1.x / SCREEN_WIDTH) - (v0.w - 2 * v0.x / SCREEN_WIDTH));
-  float t2 = 0.999f * (v2.w - 2 * v2.x / SCREEN_WIDTH) /
-             ((v2.w - 2 * v2.x / SCREEN_WIDTH) - (v0.w - 2 * v0.x / SCREEN_WIDTH));
+void one_offscreen(int side, vector<Triangle>& triangles, Triangle triangle, vec4 v0, vec4 v1, vec4 v2) {
+  float t1 = 0.999f * (v1.w - 2 * v1.x / (side * SCREEN_WIDTH)) /
+             ((v1.w - 2 * v1.x / (side * SCREEN_WIDTH)) - (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)));
+  float t2 = 0.999f * (v2.w - 2 * v2.x / (side * SCREEN_WIDTH)) /
+             ((v2.w - 2 * v2.x / (side * SCREEN_WIDTH)) - (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)));
   vec4 i1 = v1 + t1 * (v0 - v1);
   vec4 i2 = v2 + t2 * (v0 - v2);
   Triangle new_triangle1(i1, v1, v2, triangle.color); new_triangle1.normal = triangle.normal;
@@ -144,28 +144,40 @@ vector<Triangle> clip(vector<Triangle>& triangles) {
   for (uint i = 0; i < triangles.size(); i++) {
     Triangle triangle = triangles[i];
 
-    bool v0 = true;
-    bool v1 = true;
-    bool v2 = true;
+    bool v0_right = true;
+    bool v1_right = true;
+    bool v2_right = true;
+    bool v0_left = true;
+    bool v1_left = true;
+    bool v2_left = true;
 
     bool on_screen = true;
 
     if (triangle.v0.x >=  triangle.v0.w * x_max) {
-      v0 = false;
+      v0_right = false;
       on_screen = false;
     }
     if (triangle.v1.x >=  triangle.v1.w * x_max) {
-      v1 = false;
+      v1_right = false;
       on_screen = false;
     }
     if (triangle.v2.x >=  triangle.v2.w * x_max) {
-      v2 = false;
+      v2_right = false;
       on_screen = false;
     }
 
-    if (triangle.v0.x <= -triangle.v0.w * x_max) on_screen = false;
-    if (triangle.v1.x <= -triangle.v1.w * x_max) on_screen = false;
-    if (triangle.v2.x <= -triangle.v2.w * x_max) on_screen = false;
+    if (triangle.v0.x <=  -triangle.v0.w * x_max) {
+      v0_left = false;
+      on_screen = false;
+    }
+    if (triangle.v1.x <=  -triangle.v1.w * x_max) {
+      v1_left = false;
+      on_screen = false;
+    }
+    if (triangle.v2.x <=  -triangle.v2.w * x_max) {
+      v2_left = false;
+      on_screen = false;
+    }
 
     if (triangle.v0.y >=  triangle.v0.w * y_max) on_screen = false;
     if (triangle.v1.y >=  triangle.v1.w * y_max) on_screen = false;
@@ -180,12 +192,19 @@ vector<Triangle> clip(vector<Triangle>& triangles) {
 
     if (on_screen) clipped_triangles.push_back(triangle);
 
-    if      ( v0 && !v1 && !v2) two_offscreen(clipped_triangles, triangle, triangle.v0, triangle.v1, triangle.v2);
-    else if (!v0 &&  v1 && !v2) two_offscreen(clipped_triangles, triangle, triangle.v1, triangle.v0, triangle.v2);
-    else if (!v0 && !v1 &&  v2) two_offscreen(clipped_triangles, triangle, triangle.v2, triangle.v0, triangle.v1);
-    else if (!v0 &&  v1 &&  v2) one_offscreen(clipped_triangles, triangle, triangle.v0, triangle.v1, triangle.v2);
-    else if ( v0 && !v1 &&  v2) one_offscreen(clipped_triangles, triangle, triangle.v1, triangle.v0, triangle.v2);
-    else if ( v0 &&  v1 && !v2) one_offscreen(clipped_triangles, triangle, triangle.v2, triangle.v0, triangle.v1);
+    if      ( v0_right && !v1_right && !v2_right) two_offscreen(1, clipped_triangles, triangle, triangle.v0, triangle.v1, triangle.v2);
+    else if (!v0_right &&  v1_right && !v2_right) two_offscreen(1, clipped_triangles, triangle, triangle.v1, triangle.v0, triangle.v2);
+    else if (!v0_right && !v1_right &&  v2_right) two_offscreen(1, clipped_triangles, triangle, triangle.v2, triangle.v0, triangle.v1);
+    else if (!v0_right &&  v1_right &&  v2_right) one_offscreen(1, clipped_triangles, triangle, triangle.v0, triangle.v1, triangle.v2);
+    else if ( v0_right && !v1_right &&  v2_right) one_offscreen(1, clipped_triangles, triangle, triangle.v1, triangle.v0, triangle.v2);
+    else if ( v0_right &&  v1_right && !v2_right) one_offscreen(1, clipped_triangles, triangle, triangle.v2, triangle.v0, triangle.v1);
+
+    if      ( v0_left && !v1_left && !v2_left) two_offscreen(-1, clipped_triangles, triangle, triangle.v0, triangle.v1, triangle.v2);
+    else if (!v0_left &&  v1_left && !v2_left) two_offscreen(-1, clipped_triangles, triangle, triangle.v1, triangle.v0, triangle.v2);
+    else if (!v0_left && !v1_left &&  v2_left) two_offscreen(-1, clipped_triangles, triangle, triangle.v2, triangle.v0, triangle.v1);
+    else if (!v0_left &&  v1_left &&  v2_left) one_offscreen(-1, clipped_triangles, triangle, triangle.v0, triangle.v1, triangle.v2);
+    else if ( v0_left && !v1_left &&  v2_left) one_offscreen(-1, clipped_triangles, triangle, triangle.v1, triangle.v0, triangle.v2);
+    else if ( v0_left &&  v1_left && !v2_left) one_offscreen(-1, clipped_triangles, triangle, triangle.v2, triangle.v0, triangle.v1);
   }
   return clipped_triangles;
 }
