@@ -423,6 +423,9 @@ bool update() {
   while(SDL_PollEvent(&e)) {
     if (e.type == SDL_QUIT) {
       return false;
+    } else if (e.type == SDL_MOUSEMOTION) {
+      camera_position.x += e.motion.xrel * 0.001f;
+      camera_position.y += e.motion.yrel * 0.001f;
     } else if (e.type == SDL_KEYDOWN) {
       int key_code = e.key.keysym.sym;
       switch(key_code) {
