@@ -18,8 +18,8 @@ using glm::mat4;
 
 SDL_Event event;
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 800
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 720
 #define FULLSCREEN_MODE true
 
 int indent_buffer = 0;
@@ -60,6 +60,8 @@ void dec_buf();
 
 int main(int argc, char* argv[]) {
   screen *screen = InitializeSDL(SCREEN_WIDTH, SCREEN_HEIGHT, FULLSCREEN_MODE);
+
+  SDL_ShowCursor(SDL_DISABLE);
 
   vector<Triangle> triangles;
   // Load Cornell Box
@@ -434,6 +436,8 @@ bool update() {
     } else if (e.type == SDL_MOUSEMOTION) {
       yaw   += e.motion.xrel * 0.01f;
       pitch -= e.motion.yrel * 0.01f;
+    } else if (e.type == SDL_MOUSEWHEEL) {
+      focal_length += e.wheel.y;
     } else if (e.type == SDL_KEYDOWN) {
       int key_code = e.key.keysym.sym;
       switch(key_code) {
