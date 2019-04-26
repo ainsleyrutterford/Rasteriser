@@ -20,7 +20,7 @@ SDL_Event event;
 
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
-#define FULLSCREEN_MODE true
+#define FULLSCREEN_MODE false
 
 int indent_buffer = 0;
 
@@ -35,6 +35,7 @@ float yaw = 0.f;
 float pitch = 0.f;
 
 vec4 light_position(0.f, -0.5f, -0.7f, 1.f);
+vec4 orig_light_position(0.f, -0.5f, -0.7f, 1.f);
 vec3 light_power = 18.f * vec3(1.f, 1.f, 1.f);
 vec3 indirect_power_per_area = 0.5f * vec3(1.f, 1.f, 1.f);
 
@@ -91,6 +92,8 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   memcpy(glm::value_ptr(R), r, sizeof(r));
 
   vector<Triangle> clipped_triangles = clip_space(triangles, R);
+  light_position = R*(orig_light_position - camera_position);
+  cout <<" " << light_position.x << " " <<light_position.y << " " <<light_position.z << "\n";
 
   clipped_triangles = clip_top(clipped_triangles);
   clipped_triangles = clip_right(clipped_triangles);
@@ -333,7 +336,7 @@ void vertex_shader(const Vertex& v, Pixel& p) {
   float x = focal_length * v.position.x/v.position.z + SCREEN_WIDTH /2.0f;
   float y = focal_length * v.position.y/v.position.z + SCREEN_HEIGHT/2.0f;
   float z = v.position.z;
-  p = Pixel((int) x, (int) y, z, v.position + camera_position);
+  p = Pixel((int) x, (int) y, z, v.position );
   // dec_buf(); print_buf(); printf("vertex_shader end\n"); //debugprint
 }
 
@@ -400,12 +403,12 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels, const vector<Pi
 
 void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 current_reflectance) {
   vec4 r = light_position - p.pos_3D;
-
-  float radius = length(r); // WATCH OUT! Only works for w == 1
+  r.w = 0.0f;
+  float radius_sq = r.x*r.x + r.y*r.y + r.z*r.z; // WATCH OUT! Only works for w == 1
   vec4 n = current_normal;
 
   vec3 D = (vec3) (light_power * (float) fmax(glm::dot(r, n) , 0)) /
-                                 (float) (4 * M_PI * radius * radius);
+                                 (float) (4 * M_PI * radius_sq);
   vec3 R = current_reflectance * (D + indirect_power_per_area);
 
   int x = p.x;
@@ -458,16 +461,16 @@ bool update() {
           camera_position.x += 0.1;
           break;
         case SDLK_w:
-          light_position.z += 0.2;
+          orig_light_position.z += 0.2;
           break;
         case SDLK_s:
-          light_position.z -= 0.2;
+          orig_light_position.z -= 0.2;
           break;
         case SDLK_a:
-          light_position.x -= 0.2;
+          orig_light_position.x -= 0.2;
           break;
         case SDLK_d:
-          light_position.x += 0.2;
+          orig_light_position.x += 0.2;
           break;
         case SDLK_ESCAPE:
           // Move camera quit
