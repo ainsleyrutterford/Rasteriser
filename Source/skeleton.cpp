@@ -459,6 +459,14 @@ bool update() {
           // Move camera backwards
           camera_position.z -= 0.1;
           break;
+        case SDLK_i:
+          // Move camera forward
+          camera_position.y += 0.1;
+          break;
+        case SDLK_o:
+          // Move camera backwards
+          camera_position.y -= 0.1;
+          break;
         case SDLK_LEFT:
           // Move camera left
           camera_position.x -= 0.1;
