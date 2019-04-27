@@ -425,6 +425,7 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels, const vector<Pi
 }
 
 void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 current_reflectance) {
+  // print_buf(); printf("pixel_shader start\n"); inc_buf(); //debugprint
   vec4 r = light_position - p.pos_3D;
   r.w = 0.0f;
   float radius_sq = r.x * r.x + r.y * r.y + r.z * r.z; // WATCH OUT! Only works for w == 1
@@ -436,10 +437,13 @@ void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 curr
 
   int x = p.x;
   int y = p.y;
-  if (p.z_inv > depth_buffer[y][x]) {
-    depth_buffer[y][x] = p.z_inv;
-    PutPixelSDL(screen, x, y, R);
+  if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
+    if (p.z_inv > depth_buffer[y][x]) {
+      depth_buffer[y][x] = p.z_inv;
+      PutPixelSDL(screen, x, y, R);
+    }
   }
+  // dec_buf(); print_buf(); printf("pixel_shader end\n"); //debugprint
 }
 
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result) {
