@@ -59,7 +59,7 @@ vector<Triangle> load_obj(string filename) {
       triangle.normal.y *= -1.f;
       triangle.normal.z *= -1.f;
 
-      vec4 translate(-1.3f, 0.f, -1.8f, 1.0f);
+      vec4 translate(-1.3f, 0.f, -1.7f, 1.0f);
 
       triangle.v0 += translate;
       triangle.v0.w = 1.f;

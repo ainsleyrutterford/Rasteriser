@@ -48,7 +48,6 @@ vector<Triangle> clip_top(vector<Triangle>& triangles);
 vector<Triangle> clip_right(vector<Triangle>& triangles);
 vector<Triangle> clip_bottom(vector<Triangle>& triangles);
 vector<Triangle> clip_left(vector<Triangle>& triangles);
-vector<Triangle> clip_near(vector<Triangle>& triangles);
 void vertex_shader(const Vertex& v, Pixel& p);
 void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 current_reflectance);
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result);
@@ -103,7 +102,6 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   clipped_triangles = clip_right(clipped_triangles);
   clipped_triangles = clip_bottom(clipped_triangles);
   clipped_triangles = clip_left(clipped_triangles);
-  clipped_triangles = clip_near(clipped_triangles);
 
   for (uint32_t i = 0; i < clipped_triangles.size(); i++) {
     vector<Vertex> vertices(3);
@@ -320,22 +318,6 @@ vector<Triangle> clip_left(vector<Triangle>& triangles) {
     else if (!v0 &&  v1 &&  v2) one_offscreen_x(-1, clipped_triangles, triangle, triangle.v0, triangle.v1, triangle.v2);
     else if ( v0 && !v1 &&  v2) one_offscreen_x(-1, clipped_triangles, triangle, triangle.v1, triangle.v0, triangle.v2);
     else if ( v0 &&  v1 && !v2) one_offscreen_x(-1, clipped_triangles, triangle, triangle.v2, triangle.v0, triangle.v1);
-  }
-  return clipped_triangles;
-}
-
-vector<Triangle> clip_near(vector<Triangle>& triangles) {
-  vector<Triangle> clipped_triangles;
-  float z_min = 0.01f;
-  for (uint i = 0; i < triangles.size(); i++) {
-    Triangle triangle = triangles[i];
-    bool on_screen = true;
-
-    if (triangle.v0.z <= z_min) on_screen = false;
-    if (triangle.v1.z <= z_min) on_screen = false;
-    if (triangle.v2.z <= z_min) on_screen = false;
-
-    if (on_screen) clipped_triangles.push_back(triangle);
   }
   return clipped_triangles;
 }
