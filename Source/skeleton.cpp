@@ -68,10 +68,8 @@ int main(int argc, char* argv[]) {
   vector<Triangle> triangles;
   // Load Cornell Box
   LoadTestModel(triangles);
-  printf("triangles length: %d\n", (int) triangles.size());
   vector<Triangle> bunny = load_obj("Source/bunny_200.obj");
   triangles.insert(triangles.end(), bunny.begin(), bunny.end());
-  printf("triangles length: %d\n", (int) triangles.size());
 
   while (update()) {
     draw(screen, triangles);
