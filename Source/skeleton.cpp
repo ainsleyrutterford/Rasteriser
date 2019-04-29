@@ -40,7 +40,7 @@ float yaw = 0.f;
 float pitch = 0.f;
 
 vec4 light_position(0.f, -0.5f, -0.7f, 1.f);
-vec4 orig_light_position(0.f, -0.5f, -0.7f, 1.f);
+vec4 original_light_position(0.f, -0.5f, -0.7f, 1.f);
 vec3 light_power = 18.f * vec3(1.f, 1.f, 1.f);
 vec3 indirect_power_per_area = 0.5f * vec3(1.f, 1.f, 1.f);
 
@@ -95,11 +95,13 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   memset(screen_buffer , 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(vec3    ));
   memset(stencil_buffer, 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(int     ));
 
+  light_position = original_light_position - camera_position;
+
   vector<Triangle> shadow_triangles = shadows(triangles);
 
   vector<Triangle> clipped_triangles = clip_space(triangles);
+
   shadow_triangles = clip_space(shadow_triangles);
-  light_position = orig_light_position - camera_position;
 
   clipped_triangles.insert(clipped_triangles.end(), shadow_triangles.begin(), shadow_triangles.end());
 
@@ -143,7 +145,7 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
 
     vec4 average_pos = (triangle.v0 + triangle.v1 + triangle.v2) / 3.f;
 
-    vec4 incident_light_dir = average_pos - orig_light_position;
+    vec4 incident_light_dir = average_pos - original_light_position;
 
     vector<Edge> triangle_edges;
     triangle_edges.push_back(Edge(triangle.v0, triangle.v1));
@@ -167,8 +169,8 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
   for (uint32_t i = 0; i < contour_edges.size(); i++) {
     vec4 p1 = contour_edges[i].p1;
     vec4 p2 = contour_edges[i].p2;
-    shadow_triangles.push_back(Triangle(p1, p2, p1 + 20.f * (p1 - orig_light_position), vec3(-1.f,-1.f,-1.f)));
-    shadow_triangles.push_back(Triangle(p2, p1 + 20.f * (p1 - orig_light_position), p2 + 20.f * (p2 - orig_light_position), vec3(-1.f,-1.f,-1.f)));
+    shadow_triangles.push_back(Triangle(p1, p2, p1 + 20.f * (p1 - original_light_position), vec3(-1.f,-1.f,-1.f)));
+    shadow_triangles.push_back(Triangle(p2, p1 + 20.f * (p1 - original_light_position), p2 + 20.f * (p2 - original_light_position), vec3(-1.f,-1.f,-1.f)));
   }
 
   return shadow_triangles;
@@ -537,16 +539,16 @@ bool update() {
           camera_position.x += 0.1;
           break;
         case SDLK_w:
-          orig_light_position.z += 0.2;
+          original_light_position.z += 0.2;
           break;
         case SDLK_s:
-          orig_light_position.z -= 0.2;
+          original_light_position.z -= 0.2;
           break;
         case SDLK_a:
-          orig_light_position.x -= 0.2;
+          original_light_position.x -= 0.2;
           break;
         case SDLK_d:
-          orig_light_position.x += 0.2;
+          original_light_position.x += 0.2;
           break;
         case SDLK_ESCAPE:
           // Move camera quit
