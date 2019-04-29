@@ -135,9 +135,9 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
     vec4 incident_light_dir = average_pos - light_position;
 
     vector<Edge> triangle_edges;
-    triangle_edges.push_back(Edge(glm::max(triangle.v0, triangle.v1), glm::min(triangle.v0, triangle.v1)));
-    triangle_edges.push_back(Edge(glm::max(triangle.v1, triangle.v2), glm::min(triangle.v1, triangle.v2)));
-    triangle_edges.push_back(Edge(glm::max(triangle.v2, triangle.v0), glm::min(triangle.v2, triangle.v0)));
+    triangle_edges.push_back(Edge(triangle.v0, triangle.v1));
+    triangle_edges.push_back(Edge(triangle.v1, triangle.v2));
+    triangle_edges.push_back(Edge(triangle.v2, triangle.v0));
 
     if (glm::dot( vec3(incident_light_dir), vec3(clipped_triangles[i].normal) ) >= 0.f) {
       for (int e = 0; e < 3; e++) {
