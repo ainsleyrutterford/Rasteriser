@@ -8,6 +8,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <math.h>
 #include "Loader.cpp"
+#include "Edge.cpp"
+#include <set>
 
 using namespace std;
 using glm::ivec2;
@@ -114,27 +116,33 @@ void draw(screen* screen, vector<Triangle>& triangles) {
     draw_polygon(screen, vertices, current_normal, current_reflectance);
   }
 
-  // vector< vector<vec4> > contour_edges;
-  //
-  // for (uint32_t i = 0; i < clipped_triangles.size(); i++) {
-  //   vec4 average_pos = (clipped_triangles[i].v0 + clipped_triangles[i].v1 + clipped_triangles[i].v2) / 3.f;
-  //
-  //   vec4 incident_light_dir = average_pos - light_position;
-  //
-  //   vector<vec4> e1; e1.push_back(clipped_triangles[i].v0); e1.push_back(clipped_triangles[i].v1);
-  //   vector<vec4> e2; e2.push_back(clipped_triangles[i].v1); e2.push_back(clipped_triangles[i].v2);
-  //   vector<vec4> e3; e3.push_back(clipped_triangles[i].v2); e3.push_back(clipped_triangles[i].v0);
-  //
-  //   if (glm::dot( vec3(incident_light_dir), vec3(clipped_triangles[i].normal) ) >= 0.f) {
-  //     if (contour_edges.contains(e1)) contour_edges.remove(e1); // This doesnt work because e1 here is a new edge.
-  //     else contour_edges.push_back(e1);
-  //     if (contour_edges.contains(e2)) contour_edges.remove(e2);
-  //     else contour_edges.push_back(e2);
-  //     if (contour_edges.contains(e3)) contour_edges.remove(e3);
-  //     else contour_edges.push_back(e3);
-  //   }
-  //
-  // }
+  vector<Edge> contour_edges;
+
+  for (uint32_t i = 0; i < clipped_triangles.size(); i++) {
+
+    Triangle triangle = clipped_triangles[i];
+
+    vec4 average_pos = (triangle.v0 + triangle.v1 + triangle.v2) / 3.f;
+
+    vec4 incident_light_dir = average_pos - light_position;
+
+    vector<Edge> triangle_edges;
+    triangle_edges.push_back(Edge(glm::max(triangle.v0, triangle.v1), glm::min(triangle.v0, triangle.v1)));
+    triangle_edges.push_back(Edge(glm::max(triangle.v1, triangle.v2), glm::min(triangle.v1, triangle.v2)));
+    triangle_edges.push_back(Edge(glm::max(triangle.v2, triangle.v0), glm::min(triangle.v2, triangle.v0)));
+
+    if (glm::dot( vec3(incident_light_dir), vec3(clipped_triangles[i].normal) ) >= 0.f) {
+      for (int e = 0; e < 3; e++) {
+        auto id = std::find(contour_edges.begin(), contour_edges.end(), triangle_edges[e]);
+        if (id != contour_edges.end()) {
+          contour_edges.erase(id);
+        } else {
+          contour_edges.push_back(triangle_edges[e]);
+        }
+      }
+    }
+  }
+
 }
 
 vector<Triangle> clip_space(vector<Triangle>& triangles, mat4 R) {
