@@ -32,6 +32,8 @@ struct Vertex {
 };
 
 float depth_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
+vec3 screen_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
+int stencil_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 vec4  camera_position(0.f, 0.f, -3.f, 1.f);
 float focal_length = 500.f;
 float yaw = 0.f;
@@ -44,6 +46,7 @@ vec3 indirect_power_per_area = 0.5f * vec3(1.f, 1.f, 1.f);
 
 bool update();
 void draw(screen* screen, vector<Triangle>& triangles);
+void draw_screen(screen* screen);
 vector<Triangle> shadows(vector<Triangle> clipped_triangles);
 vector<Triangle> clip_space(vector<Triangle>& triangles, mat4 R);
 vector<Triangle> clip(vector<Triangle>& triangles);
@@ -89,6 +92,8 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   // Clear screen buffer and depth_buffer
   memset(screen->buffer, 0, screen->height * screen->width * sizeof(uint32_t));
   memset(depth_buffer  , 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(float   ));
+  memset(screen_buffer , 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(vec3    ));
+  memset(stencil_buffer, 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(int     ));
 
   float r[16] = {cos(yaw),  sin(pitch)*sin(yaw),   sin(yaw)*cos(pitch),  1.0f,
                  0.0f,      cos(pitch),           -sin(pitch),           1.0f,
@@ -120,7 +125,18 @@ void draw(screen* screen, vector<Triangle>& triangles) {
 
     draw_polygon(screen, vertices, current_normal, current_reflectance);
   }
+  draw_screen(screen);
+}
 
+void draw_screen(screen* screen) {
+  for (int y = 0; y < SCREEN_HEIGHT; y++) {
+    for (int x = 0; x < SCREEN_WIDTH; x++) {
+      if (stencil_buffer[y][x] > 0) {
+        screen_buffer[y][x] -= 0.5f;
+      }
+      PutPixelSDL(screen, x, y, screen_buffer[y][x]);
+    }
+  }
 }
 
 vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
@@ -156,8 +172,8 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
   for (uint32_t i = 0; i < contour_edges.size(); i++) {
     vec4 p1 = contour_edges[i].p1;
     vec4 p2 = contour_edges[i].p2;
-    shadow_triangles.push_back(Triangle(p1, p2, p1 + 1.f * (p1 - light_position), vec3(0,0,0)));
-    shadow_triangles.push_back(Triangle(p2, p1 + 1.f * (p1 - light_position), p2 + 1.f * (p2 - light_position), vec3(0,0,0)));
+    shadow_triangles.push_back(Triangle(p1, p2, p1 + 1.f * (p1 - light_position), vec3(-1.f,-1.f,-1.f)));
+    shadow_triangles.push_back(Triangle(p2, p1 + 1.f * (p1 - light_position), p2 + 1.f * (p2 - light_position), vec3(-1.f,-1.f,-1.f)));
   }
 
   return shadow_triangles;
@@ -468,7 +484,11 @@ void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 curr
   if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
     if (p.z_inv > depth_buffer[y][x]) {
       depth_buffer[y][x] = p.z_inv;
-      PutPixelSDL(screen, x, y, R);
+      if (current_reflectance == vec3(-1.f, -1.f, -1.f)) {
+        stencil_buffer[y][x]++;
+      } else {
+        screen_buffer[y][x] = R;
+      }
     }
   }
   // dec_buf(); print_buf(); printf("pixel_shader end\n"); //debugprint
