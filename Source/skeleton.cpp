@@ -99,14 +99,14 @@ void draw(screen* screen, vector<Triangle>& triangles) {
 
   vector<Triangle> clipped_triangles = clip_space(triangles, R);
 
-  vector<Triangle> shadow_triangles = shadows(clipped_triangles);
-
-  clipped_triangles.insert(clipped_triangles.end(), shadow_triangles.begin(), shadow_triangles.end());
-
   clipped_triangles = clip_top(clipped_triangles);
   clipped_triangles = clip_right(clipped_triangles);
   clipped_triangles = clip_bottom(clipped_triangles);
   clipped_triangles = clip_left(clipped_triangles);
+
+  vector<Triangle> shadow_triangles = shadows(clipped_triangles);
+
+  clipped_triangles.insert(clipped_triangles.end(), shadow_triangles.begin(), shadow_triangles.end());
 
   for (uint32_t i = 0; i < clipped_triangles.size(); i++) {
     vector<Vertex> vertices(3);
@@ -156,8 +156,8 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
   for (uint32_t i = 0; i < contour_edges.size(); i++) {
     vec4 p1 = contour_edges[i].p1;
     vec4 p2 = contour_edges[i].p2;
-    shadow_triangles.push_back(Triangle(p1, p2, p1 + 1000.f * (p1 - light_position), vec3(0,0,0)));
-    shadow_triangles.push_back(Triangle(p2, p1 + 1000.f * (p1 - light_position), p2 + 1000.f * (p2 - light_position), vec3(0,0,0)));
+    shadow_triangles.push_back(Triangle(p1, p2, p1 + 1.f * (p1 - light_position), vec3(0,0,0)));
+    shadow_triangles.push_back(Triangle(p2, p1 + 1.f * (p1 - light_position), p2 + 1.f * (p2 - light_position), vec3(0,0,0)));
   }
 
   return shadow_triangles;
