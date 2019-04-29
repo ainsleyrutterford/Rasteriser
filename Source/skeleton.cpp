@@ -21,7 +21,7 @@ using glm::mat4;
 
 SDL_Event event;
 
-#define SCREEN_WIDTH 1280
+#define SCREEN_WIDTH 720
 #define SCREEN_HEIGHT 720
 #define FULLSCREEN_MODE false
 
@@ -168,7 +168,7 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
     vec4 p1 = contour_edges[i].p1;
     vec4 p2 = contour_edges[i].p2;
     shadow_triangles.push_back(Triangle(p1, p2, p1 + 20.f * (p1 - orig_light_position), vec3(-1.f,-1.f,-1.f)));
-    shadow_triangles.push_back(Triangle(p2, p1 + 20.f * (p1 - orig_light_position), p2 + 1.f * (p2 - orig_light_position), vec3(-1.f,-1.f,-1.f)));
+    shadow_triangles.push_back(Triangle(p2, p1 + 20.f * (p1 - orig_light_position), p2 + 20.f * (p2 - orig_light_position), vec3(-1.f,-1.f,-1.f)));
   }
 
   return shadow_triangles;
@@ -194,9 +194,9 @@ vector<Triangle> clip_space(vector<Triangle>& triangles) {
 }
 
 void two_offscreen_x(int side, vector<Triangle>& triangles, Triangle triangle, vec4 v0, vec4 v1, vec4 v2) {
-  float t1 = 0.999f * (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) /
+  float t1 = 0.9999f * (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) /
              ((v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) - (v1.w - 2 * v1.x / (side * SCREEN_WIDTH)));
-  float t2 = 0.999f * (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) /
+  float t2 = 0.9999f * (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) /
              ((v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) - (v2.w - 2 * v2.x / (side * SCREEN_WIDTH)));
   vec4 i1 = v0 + t1 * (v1 - v0);
   vec4 i2 = v0 + t2 * (v2 - v0);
@@ -205,9 +205,9 @@ void two_offscreen_x(int side, vector<Triangle>& triangles, Triangle triangle, v
 }
 
 void one_offscreen_x(int side, vector<Triangle>& triangles, Triangle triangle, vec4 v0, vec4 v1, vec4 v2) {
-  float t1 = 0.999f * (v1.w - 2 * v1.x / (side * SCREEN_WIDTH)) /
+  float t1 = 0.9999f * (v1.w - 2 * v1.x / (side * SCREEN_WIDTH)) /
              ((v1.w - 2 * v1.x / (side * SCREEN_WIDTH)) - (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)));
-  float t2 = 0.999f * (v2.w - 2 * v2.x / (side * SCREEN_WIDTH)) /
+  float t2 = 0.9999f * (v2.w - 2 * v2.x / (side * SCREEN_WIDTH)) /
              ((v2.w - 2 * v2.x / (side * SCREEN_WIDTH)) - (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)));
   vec4 i1 = v1 + t1 * (v0 - v1);
   vec4 i2 = v2 + t2 * (v0 - v2);
@@ -218,9 +218,9 @@ void one_offscreen_x(int side, vector<Triangle>& triangles, Triangle triangle, v
 }
 
 void two_offscreen_y(int side, vector<Triangle>& triangles, Triangle triangle, vec4 v0, vec4 v1, vec4 v2) {
-  float t1 = 0.999f * (v0.w - 2 * v0.y / (side * SCREEN_HEIGHT)) /
+  float t1 = 0.9999f * (v0.w - 2 * v0.y / (side * SCREEN_HEIGHT)) /
              ((v0.w - 2 * v0.y / (side * SCREEN_HEIGHT)) - (v1.w - 2 * v1.y / (side * SCREEN_HEIGHT)));
-  float t2 = 0.999f * (v0.w - 2 * v0.y / (side * SCREEN_HEIGHT)) /
+  float t2 = 0.9999f * (v0.w - 2 * v0.y / (side * SCREEN_HEIGHT)) /
              ((v0.w - 2 * v0.y / (side * SCREEN_HEIGHT)) - (v2.w - 2 * v2.y / (side * SCREEN_HEIGHT)));
   vec4 i1 = v0 + t1 * (v1 - v0);
   vec4 i2 = v0 + t2 * (v2 - v0);
@@ -229,9 +229,9 @@ void two_offscreen_y(int side, vector<Triangle>& triangles, Triangle triangle, v
 }
 
 void one_offscreen_y(int side, vector<Triangle>& triangles, Triangle triangle, vec4 v0, vec4 v1, vec4 v2) {
-  float t1 = 0.999f * (v1.w - 2 * v1.y / (side * SCREEN_HEIGHT)) /
+  float t1 = 0.9999f * (v1.w - 2 * v1.y / (side * SCREEN_HEIGHT)) /
              ((v1.w - 2 * v1.y / (side * SCREEN_HEIGHT)) - (v0.w - 2 * v0.y / (side * SCREEN_HEIGHT)));
-  float t2 = 0.999f * (v2.w - 2 * v2.y / (side * SCREEN_HEIGHT)) /
+  float t2 = 0.9999f * (v2.w - 2 * v2.y / (side * SCREEN_HEIGHT)) /
              ((v2.w - 2 * v2.y / (side * SCREEN_HEIGHT)) - (v0.w - 2 * v0.y / (side * SCREEN_HEIGHT)));
   vec4 i1 = v1 + t1 * (v0 - v1);
   vec4 i2 = v2 + t2 * (v0 - v2);
