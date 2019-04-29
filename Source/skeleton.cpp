@@ -21,9 +21,9 @@ using glm::mat4;
 
 SDL_Event event;
 
-#define SCREEN_WIDTH 720
-#define SCREEN_HEIGHT 720
-#define FULLSCREEN_MODE false
+#define SCREEN_WIDTH 1440
+#define SCREEN_HEIGHT 1440
+#define FULLSCREEN_MODE true
 
 int indent_buffer = 0;
 
@@ -32,10 +32,10 @@ struct Vertex {
 };
 
 float depth_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
-vec3 screen_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
-int stencil_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
+vec3  screen_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
+int   stencil_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 vec4  camera_position(0.f, 0.f, -3.f, 1.f);
-float focal_length = 500.f;
+float focal_length = 1000.f;
 float yaw = 0.f;
 float pitch = 0.f;
 
@@ -46,6 +46,7 @@ vec3 indirect_power_per_area = 0.5f * vec3(1.f, 1.f, 1.f);
 
 bool update();
 void draw(screen* screen, vector<Triangle>& triangles);
+void draw_shadows();
 void draw_screen(screen* screen);
 vector<Triangle> shadows(vector<Triangle> clipped_triangles);
 vector<Triangle> clip_space(vector<Triangle>& triangles);
@@ -67,7 +68,7 @@ void inc_buf();
 void dec_buf();
 
 int main(int argc, char* argv[]) {
-  screen *screen = InitializeSDL(SCREEN_WIDTH, SCREEN_HEIGHT, FULLSCREEN_MODE);
+  screen *screen = InitializeSDL(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, FULLSCREEN_MODE);
 
   SDL_ShowCursor(SDL_DISABLE);
 
@@ -122,16 +123,26 @@ void draw(screen* screen, vector<Triangle>& triangles) {
 
     draw_polygon(screen, vertices, current_normal, current_reflectance);
   }
+  draw_shadows();
   draw_screen(screen);
 }
 
-void draw_screen(screen* screen) {
+void draw_shadows() {
   for (int y = 0; y < SCREEN_HEIGHT; y++) {
     for (int x = 0; x < SCREEN_WIDTH; x++) {
       if (stencil_buffer[y][x] > 0) {
         screen_buffer[y][x] -= 0.5f;
       }
-      PutPixelSDL(screen, x, y, screen_buffer[y][x]);
+    }
+  }
+}
+
+void draw_screen(screen* screen) {
+  for (int y = 0; y < SCREEN_HEIGHT; y+=2) {
+    for (int x = 0; x < SCREEN_WIDTH; x+=2) {
+      vec3 average = (screen_buffer[y][x  ] + screen_buffer[y+1][x  ]
+                    + screen_buffer[y][x+1] + screen_buffer[y+1][x+1]) / 4.f;
+      PutPixelSDL(screen, int(x/2), int(y/2), average);
     }
   }
 }
