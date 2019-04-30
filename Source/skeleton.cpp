@@ -165,7 +165,7 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
 
     if (glm::dot( vec3(incident_light_dir), vec3(clipped_triangles[i].normal) ) >= 0.f) {
       for (int e = 0; e < 3; e++) {
-        auto id = std::find(contour_edges.begin(), contour_edges.end(), triangle_edges[e]);
+        std::vector<Edge>::iterator id = std::find(contour_edges.begin(), contour_edges.end(), triangle_edges[e]);
         if (id != contour_edges.end()) {
           contour_edges.erase(id);
         } else {
