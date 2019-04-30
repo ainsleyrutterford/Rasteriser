@@ -28,7 +28,7 @@ vector<Triangle> load_obj(string filename) {
   float yaw   = 0.f;
   float pitch = 135.f;
 
-  ifstream source(filename);
+  ifstream source(filename.c_str());
   vector<vec4> vertices;
   vector<Triangle> triangles;
 

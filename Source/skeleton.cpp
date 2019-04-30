@@ -10,6 +10,7 @@
 #include "Loader.cpp"
 #include "Edge.cpp"
 #include <set>
+#include <algorithm>
 
 using namespace std;
 using glm::ivec2;
