@@ -22,9 +22,10 @@ using glm::mat4;
 
 SDL_Event event;
 
-#define SCREEN_WIDTH 1440
-#define SCREEN_HEIGHT 1440
-#define FULLSCREEN_MODE true
+#define SCREEN_WIDTH 700
+#define SCREEN_HEIGHT 700
+#define FULLSCREEN_MODE false
+#define AA 2
 
 struct Vertex {
   vec4 position;
@@ -34,7 +35,7 @@ float depth_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 vec3  screen_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 int   stencil_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 vec4  camera_position(0.f, 0.f, -3.f, 1.f);
-float focal_length = 1000.f;
+float focal_length = 600.f * AA;
 float yaw = 0.f;
 float pitch = 0.f;
 
@@ -62,7 +63,7 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels, const vector<Pi
 void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec4 current_normal, vec3 current_reflectance );
 
 int main(int argc, char* argv[]) {
-  screen *screen = InitializeSDL(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, FULLSCREEN_MODE);
+  screen *screen = InitializeSDL(SCREEN_WIDTH/AA, SCREEN_HEIGHT/AA, FULLSCREEN_MODE);
 
   SDL_ShowCursor(SDL_DISABLE);
 
@@ -137,11 +138,16 @@ void draw_shadows() {
 }
 
 void draw_screen(screen* screen) {
-  for (int y = 0; y < SCREEN_HEIGHT; y+=2) {
-    for (int x = 0; x < SCREEN_WIDTH; x+=2) {
-      vec3 average = (screen_buffer[y][x  ] + screen_buffer[y+1][x  ]
-                    + screen_buffer[y][x+1] + screen_buffer[y+1][x+1]) / 4.f;
-      PutPixelSDL(screen, int(x/2), int(y/2), average);
+  for (int y = 0; y < SCREEN_HEIGHT; y+=AA) {
+    for (int x = 0; x < SCREEN_WIDTH; x+=AA) {
+      vec3 average;
+      for (int a = 0; a < AA; a++) {
+        for (int aa = 0; aa < AA; aa++) {
+          average += screen_buffer[y+a][x+aa];
+        }
+      }
+      average /= AA*AA;
+      PutPixelSDL(screen, int(x/AA), int(y/AA), average);
     }
   }
 }
