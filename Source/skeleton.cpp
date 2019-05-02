@@ -180,7 +180,7 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
     vec4 p1 = contour_edges[i].p1;
     vec4 p2 = contour_edges[i].p2;
     shadow_triangles.push_back(Triangle(p1, p2, p1 + 20.f * (p1 - original_light_position), vec3(-1.f,-1.f,-1.f)));
-    shadow_triangles.push_back(Triangle(p2, p1 + 20.f * (p1 - original_light_position), p2 + 20.f * (p2 - original_light_position), vec3(-1.f,-1.f,-1.f)));
+    shadow_triangles.push_back(Triangle(p2 + 20.f * (p2 - original_light_position), p1 + 20.f * (p1 - original_light_position), p2, vec3(-1.f,-1.f,-1.f)));
   }
 
   return shadow_triangles;
