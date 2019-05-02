@@ -26,8 +26,6 @@ SDL_Event event;
 #define SCREEN_HEIGHT 1440
 #define FULLSCREEN_MODE true
 
-int indent_buffer = 0;
-
 struct Vertex {
   vec4 position;
 };
@@ -392,7 +390,6 @@ vector<Triangle> clip_left(vector<Triangle>& triangles) {
 }
 
 void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec4 current_normal, vec3 current_reflectance ) {
-  // print_buf(); printf("draw_polygon start\n"); inc_buf(); //debugprint
   uint V = vertices.size();
   vector<Pixel> vertex_pixels(V);
   for (uint i = 0; i < V; i++) {
@@ -402,22 +399,18 @@ void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec4 current_n
   vector<Pixel> right_pixels;
   compute_polygon_rows(vertex_pixels, left_pixels, right_pixels);
   draw_rows(screen, left_pixels, right_pixels, current_normal, current_reflectance);
-  // dec_buf(); print_buf(); printf("draw_polygon end\n"); //debugprint
 }
 
 void vertex_shader(const Vertex& v, Pixel& p) {
-  // print_buf(); printf("vertex_shader start\n"); inc_buf(); //debugprint
   float x = focal_length * v.position.x/v.position.z + SCREEN_WIDTH /2.0f;
   float y = focal_length * v.position.y/v.position.z + SCREEN_HEIGHT/2.0f;
   float z_inv = 1.f/v.position.z;
   p = Pixel((int) x, (int) y, z_inv, v.position);
-  // dec_buf(); print_buf(); printf("vertex_shader end\n"); //debugprint
 }
 
 void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
                           vector<Pixel>& left_pixels,
                           vector<Pixel>& right_pixels) {
-  // print_buf(); printf("compute_polygon_rows start\n"); inc_buf(); //debugprint
   int min_y = numeric_limits<int>::max();
   int max_y = numeric_limits<int>::min();
   for (uint i = 0; i < vertex_pixels.size(); i++) {
@@ -454,11 +447,9 @@ void compute_polygon_rows(const vector<Pixel>& vertex_pixels,
       }
     }
   }
-  // dec_buf(); print_buf(); printf("compute_polygon_rows end\n"); //debugprint
 }
 
 void draw_rows(screen* screen, const vector<Pixel>& left_pixels, const vector<Pixel>& right_pixels, vec4 current_normal, vec3 current_reflectance) {
-  // print_buf(); printf("draw_rows start\n"); inc_buf(); //debugprint
   uint N = left_pixels.size();
 
   // Iterate through each row
@@ -472,11 +463,9 @@ void draw_rows(screen* screen, const vector<Pixel>& left_pixels, const vector<Pi
       pixel_shader(screen, row_pixels[i], current_normal, current_reflectance);
     }
   }
-  // dec_buf(); print_buf(); printf("draw_rows end\n"); //debugprint
 }
 
 void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 current_reflectance) {
-  // print_buf(); printf("pixel_shader start\n"); inc_buf(); //debugprint
   vec4 r = light_position - p.pos_3D;
   r.w = 0.0f;
   float radius_sq = r.x * r.x + r.y * r.y + r.z * r.z; // WATCH OUT! Only works for w == 1
@@ -498,18 +487,15 @@ void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 curr
       }
     }
   }
-  // dec_buf(); print_buf(); printf("pixel_shader end\n"); //debugprint
 }
 
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result) {
-  // print_buf(); printf("interpolate start\n"); inc_buf(); //debugprint
   float steps = float(fmax(result.size() - 1, 1));
   for (uint i = 0; i < result.size(); i++) {
     result.at(i) = a + ((b - a) * ((float)i)) / steps;
     result[i].pos_3D = (a.pos_3D*a.z_inv + ((b.pos_3D*b.z_inv - a.pos_3D*a.z_inv) * ((float) i)) / steps) / result[i].z_inv;
     result[i].pos_3D.w = 1.f;
   }
-  // dec_buf(); print_buf(); printf("interpolate end\n"); //debugprint
 }
 
 // Place updates of parameters here
@@ -570,7 +556,3 @@ bool update() {
   }
   return true;
 }
-
-void print_buf() { for (int i = 0; i < indent_buffer; i++) printf("  "); }
-void inc_buf() { indent_buffer += 2; }
-void dec_buf() { indent_buffer -= 2; }
