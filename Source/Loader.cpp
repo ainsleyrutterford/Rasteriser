@@ -54,10 +54,7 @@ vector<Triangle> load_obj(string filename) {
     } else if (s == "f") {
       int v1, v2, v3;
       in >> v1 >> v2 >> v3;
-      Triangle triangle = Triangle(R * vertices[v1-1], R * vertices[v2-1], R * vertices[v3-1], grey);
-      triangle.normal.x *= -1.f;
-      triangle.normal.y *= -1.f;
-      triangle.normal.z *= -1.f;
+      Triangle triangle = Triangle(R * vertices[v3-1], R * vertices[v2-1], R * vertices[v1-1], white);
 
       vec4 translate(-1.3f, 0.1f, -1.7f, 1.0f);
 

@@ -48,7 +48,7 @@ void draw(screen* screen, vector<Triangle>& triangles);
 void draw_shadows();
 void draw_screen(screen* screen);
 vector<Triangle> shadows(vector<Triangle> clipped_triangles);
-vector<Triangle> clip_space(vector<Triangle>& triangles);
+vector<Triangle> clip_space(vector<Triangle>& triangles, mat4 R);
 vector<Triangle> clip(vector<Triangle>& triangles);
 vector<Triangle> clip_top(vector<Triangle>& triangles);
 vector<Triangle> clip_right(vector<Triangle>& triangles);
@@ -57,14 +57,9 @@ vector<Triangle> clip_left(vector<Triangle>& triangles);
 void vertex_shader(const Vertex& v, Pixel& p);
 void pixel_shader(screen* screen, const Pixel& p, vec4 current_normal, vec3 current_reflectance);
 void interpolate(Pixel a, Pixel b, vector<Pixel>& result);
-void interpolate(ivec2 a, ivec2 b, vector<ivec2>& result);
-void draw_line_SDL(screen* screen, Pixel a, Pixel b);
 void compute_polygon_rows(const vector<Pixel>& vertex_pixels, vector<Pixel>& left_pixels, vector<Pixel>& right_pixels);
 void draw_rows(screen* screen, const vector<Pixel>& left_pixels, const vector<Pixel>& right_pixels, vec4 current_normal, vec3 current_reflectance);
 void draw_polygon(screen* screen, const vector<Vertex>& vertices, vec4 current_normal, vec3 current_reflectance );
-void print_buf();
-void inc_buf();
-void dec_buf();
 
 int main(int argc, char* argv[]) {
   screen *screen = InitializeSDL(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, FULLSCREEN_MODE);
@@ -95,14 +90,19 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   memset(screen_buffer , 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(vec3    ));
   memset(stencil_buffer, 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(int     ));
 
-  light_position = original_light_position - camera_position;
+  float r[16] = {cos(yaw),  sin(pitch)*sin(yaw),   sin(yaw)*cos(pitch),  1.0f,
+                 0.0f,      cos(pitch),           -sin(pitch),           1.0f,
+                -sin(yaw),  cos(yaw)*sin(pitch),   cos(pitch)*cos(yaw),  1.0f,
+                 1.0f,      1.0f,                  1.0f,                 1.0f};
+  mat4 R;
+  memcpy(glm::value_ptr(R), r, sizeof(r));
+
+  light_position = R * (original_light_position - camera_position);
+
+  vector<Triangle> clipped_triangles = clip_space(triangles, R);
 
   vector<Triangle> shadow_triangles = shadows(triangles);
-
-  vector<Triangle> clipped_triangles = clip_space(triangles);
-
-  shadow_triangles = clip_space(shadow_triangles);
-
+  shadow_triangles = clip_space(shadow_triangles, R);
   clipped_triangles.insert(clipped_triangles.end(), shadow_triangles.begin(), shadow_triangles.end());
 
   clipped_triangles = clip_top(clipped_triangles);
@@ -186,19 +186,20 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
   return shadow_triangles;
 }
 
-vector<Triangle> clip_space(vector<Triangle>& triangles) {
+vector<Triangle> clip_space(vector<Triangle>& triangles, mat4 R) {
   vector<Triangle> clipped_triangles;
 
   for (uint i = 0; i < triangles.size(); i++) {
-    Triangle triangle = triangles[i];
-    triangle.v0   = triangle.v0 - camera_position;
-    triangle.v0.w = triangle.v0.z/focal_length;
+    vec4 v0   = R * (triangles[i].v0 - camera_position);
+    v0.w = v0.z/focal_length;
 
-    triangle.v1   = triangle.v1 - camera_position;
-    triangle.v1.w = triangle.v1.z/focal_length;
+    vec4 v1   = R * (triangles[i].v1 - camera_position);
+    v1.w = v1.z/focal_length;
 
-    triangle.v2   = triangle.v2 - camera_position;
-    triangle.v2.w = triangle.v2.z/focal_length;
+    vec4 v2   = R * (triangles[i].v2 - camera_position);
+    v2.w = v2.z/focal_length;
+
+    Triangle triangle(v0, v1, v2, triangles[i].color);
 
     clipped_triangles.push_back(triangle);
   }
