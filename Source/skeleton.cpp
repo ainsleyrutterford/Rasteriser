@@ -68,8 +68,9 @@ int main(int argc, char* argv[]) {
   SDL_ShowCursor(SDL_DISABLE);
 
   vector<Triangle> triangles;
-  // Load Cornell Box
+  // Load Cornell Box.
   LoadTestModel(triangles);
+  // Import low poly stanford bunny model.
   vector<Triangle> bunny = load_obj("Source/bunny_200.obj");
   triangles.insert(triangles.end(), bunny.begin(), bunny.end());
 
@@ -85,12 +86,13 @@ int main(int argc, char* argv[]) {
 }
 
 void draw(screen* screen, vector<Triangle>& triangles) {
-  // Clear screen buffer and depth_buffer
+  // Clear screen, depth, and stencil buffers.
   memset(screen->buffer, 0, screen->height * screen->width * sizeof(uint32_t));
   memset(depth_buffer  , 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(float   ));
   memset(screen_buffer , 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(vec3    ));
   memset(stencil_buffer, 0, SCREEN_HEIGHT  * SCREEN_WIDTH  * sizeof(int     ));
 
+  // Rotation matrix.
   float r[16] = {cos(yaw),  sin(pitch)*sin(yaw),   sin(yaw)*cos(pitch),  1.0f,
                  0.0f,      cos(pitch),           -sin(pitch),           1.0f,
                 -sin(yaw),  cos(yaw)*sin(pitch),   cos(pitch)*cos(yaw),  1.0f,
@@ -98,19 +100,26 @@ void draw(screen* screen, vector<Triangle>& triangles) {
   mat4 R;
   memcpy(glm::value_ptr(R), r, sizeof(r));
 
+  // Rotate the light.
   light_position = R * (original_light_position - camera_position);
 
+  // Map triangles from world space to clip space.
   vector<Triangle> clipped_triangles = clip_space(triangles, R);
 
+  // Generate shadow volume triangles.
   vector<Triangle> shadow_triangles = shadows(triangles);
+  // Map shadow volume triangles to clip space.
   shadow_triangles = clip_space(shadow_triangles, R);
+  // Attach shadow_volume triangles to triangles to be clipped.
   clipped_triangles.insert(clipped_triangles.end(), shadow_triangles.begin(), shadow_triangles.end());
 
+  // Clip top, right, bottom, and left planes of the frustrum.
   clipped_triangles = clip_top(clipped_triangles);
   clipped_triangles = clip_right(clipped_triangles);
   clipped_triangles = clip_bottom(clipped_triangles);
   clipped_triangles = clip_left(clipped_triangles);
 
+  // Call draw_polygon for each triangle.
   for (uint32_t i = 0; i < clipped_triangles.size(); i++) {
     vector<Vertex> vertices(3);
 
@@ -123,10 +132,15 @@ void draw(screen* screen, vector<Triangle>& triangles) {
 
     draw_polygon(screen, vertices, current_normal, current_reflectance);
   }
+  // Draw the shadows on the screen buffer.
   draw_shadows();
+  // Draw the screen with anti-aliasing.
   draw_screen(screen);
 }
 
+// Draw the shadows on the screen buffer. For each pixel, if the stencil
+// buffer is greater than 0, it is in shadow. If the pixel is in shadow,
+// remove 0.5 from the colour value.
 void draw_shadows() {
   for (int y = 0; y < SCREEN_HEIGHT; y++) {
     for (int x = 0; x < SCREEN_WIDTH; x++) {
@@ -137,6 +151,9 @@ void draw_shadows() {
   }
 }
 
+// Draw the screen with anti-aliasing. Loop through every pixel and average
+// the pixel values with its neighbours. Finally, call PutPixelSDL with the
+// correct x and y position, and the average colour value.
 void draw_screen(screen* screen) {
   for (int y = 0; y < SCREEN_HEIGHT; y+=AA) {
     for (int x = 0; x < SCREEN_WIDTH; x+=AA) {
@@ -152,36 +169,51 @@ void draw_screen(screen* screen) {
   }
 }
 
+// Generate the shadow triangles and return them.
 vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
+  // The edges that lie between lit and dark surfaces. These edges will
+  // then be extruded to create the shadow volumes.
   vector<Edge> contour_edges;
 
+  // This algorithm iterates through the triangles and fills the contour edges
+  // list with the correct edges mentioned above.
   for (uint32_t i = 0; i < clipped_triangles.size(); i++) {
 
     Triangle triangle = clipped_triangles[i];
 
+    // The average position of the triangle.
     vec4 average_pos = (triangle.v0 + triangle.v1 + triangle.v2) / 3.f;
 
+    // The direction of the incident light to the triangle.
     vec4 incident_light_dir = average_pos - original_light_position;
 
+    // The three edges of the triangle.
     vector<Edge> triangle_edges;
     triangle_edges.push_back(Edge(triangle.v0, triangle.v1));
     triangle_edges.push_back(Edge(triangle.v1, triangle.v2));
     triangle_edges.push_back(Edge(triangle.v2, triangle.v0));
 
+    // If the triangle faces away from the light source...
     if (glm::dot( vec3(incident_light_dir), vec3(clipped_triangles[i].normal) ) >= 0.f) {
+      // Iterate through each edge of the triangle.
       for (int e = 0; e < 3; e++) {
+        // If the contour_edges contains the edge...
         std::vector<Edge>::iterator id = std::find(contour_edges.begin(), contour_edges.end(), triangle_edges[e]);
         if (id != contour_edges.end()) {
+          // Then remove the edge from the contour edges list.
           contour_edges.erase(id);
         } else {
+          // Otherwise, add it to the contour edges list.
           contour_edges.push_back(triangle_edges[e]);
         }
       }
     }
   }
 
+  // The final shadow volumes to be returned.
   vector<Triangle> shadow_triangles;
 
+  // Iterate over the contour edges.
   for (uint32_t i = 0; i < contour_edges.size(); i++) {
     vec4 p1 = contour_edges[i].p1;
     vec4 p2 = contour_edges[i].p2;
