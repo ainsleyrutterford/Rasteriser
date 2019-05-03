@@ -198,6 +198,9 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
       // Iterate through each edge of the triangle.
       for (int e = 0; e < 3; e++) {
         // If the contour_edges contains the edge...
+        // Note that this line takes O(n) time since we are using vectors. It would definitely
+        // be worth implementing the contour edges list using an unordered_set for example, as
+        // the lookup time would be O(1). The line below slows down the rasteriser considerably.
         std::vector<Edge>::iterator id = std::find(contour_edges.begin(), contour_edges.end(), triangle_edges[e]);
         if (id != contour_edges.end()) {
           // Then remove the edge from the contour edges list.
@@ -217,17 +220,27 @@ vector<Triangle> shadows(vector<Triangle> clipped_triangles) {
   for (uint32_t i = 0; i < contour_edges.size(); i++) {
     vec4 p1 = contour_edges[i].p1;
     vec4 p2 = contour_edges[i].p2;
+    // Create two triangles starting at the contour edge, and extruding out in
+    // the direction from the light source to the edge. The triangles can extrude
+    // a large distance as the shadow triangles will eventually be clipped anyway.
+    // The shadow triangles have a colour of (-1, -1, -1) so we know which
+    // triangles are which later on.
     shadow_triangles.push_back(Triangle(p1, p2, p1 + 20.f * (p1 - original_light_position), vec3(-1.f,-1.f,-1.f)));
     shadow_triangles.push_back(Triangle(p2 + 20.f * (p2 - original_light_position), p1 + 20.f * (p1 - original_light_position), p2, vec3(-1.f,-1.f,-1.f)));
   }
 
+  // Finally, return the shadow triangles.
   return shadow_triangles;
 }
 
+// Map shadow volume triangles to clip space. We also rotate the triangles
+// using the rotation matrix.
 vector<Triangle> clip_space(vector<Triangle>& triangles, mat4 R) {
   vector<Triangle> clipped_triangles;
 
   for (uint i = 0; i < triangles.size(); i++) {
+    // For each vertex, set the position relative to the camera position,
+    // and rotate by R. Then set the w co-ordinate to z/f so it is in clip space.
     vec4 v0   = R * (triangles[i].v0 - camera_position);
     v0.w = v0.z/focal_length;
 
@@ -237,18 +250,28 @@ vector<Triangle> clip_space(vector<Triangle>& triangles, mat4 R) {
     vec4 v2   = R * (triangles[i].v2 - camera_position);
     v2.w = v2.z/focal_length;
 
+    // Create a triangle out of the new vertices.
     Triangle triangle(v0, v1, v2, triangles[i].color);
 
+    // Add the triangle to the clipped triangles.
     clipped_triangles.push_back(triangle);
   }
   return clipped_triangles;
 }
 
+// This function handles the case when two vertices are off screen, and one is
+// on screen. The two_offscreen_y is very similar, just in the y axis. These
+// two functions could be merged and generalised later on.
 void two_offscreen_x(int side, vector<Triangle>& triangles, Triangle triangle, vec4 v0, vec4 v1, vec4 v2) {
+  // t1 and t2 are the 'distances' along the lines from the start of the lines to
+  // the intersections of the lines with the clipping plane.
+  // We multiply by 0.9999 as the intersection points calculated could be one
+  // one pixel out of frame, for example.
   float t1 = 0.9999f * (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) /
              ((v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) - (v1.w - 2 * v1.x / (side * SCREEN_WIDTH)));
   float t2 = 0.9999f * (v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) /
              ((v0.w - 2 * v0.x / (side * SCREEN_WIDTH)) - (v2.w - 2 * v2.x / (side * SCREEN_WIDTH)));
+  // The intersection points are calculated as the start position plus ... finish me
   vec4 i1 = v0 + t1 * (v1 - v0);
   vec4 i2 = v0 + t2 * (v2 - v0);
   Triangle new_triangle(v0, i1, i2, triangle.color); new_triangle.normal = triangle.normal;
