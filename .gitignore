@@ -2,3 +2,5 @@ Instructions/*
 screenshot.bmp
 Source/.DS_Store
 .DS_Store
+Build/skeleton
+Build/skeleton.o
