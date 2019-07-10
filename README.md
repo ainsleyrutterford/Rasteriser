@@ -21,3 +21,7 @@ $ make clean
 $ make
 $ ./Build/skeleton
 ```
+
+<p align="center"> 
+<img src="http://g.recordit.co/HvrHPvOW8E.gif">
+</p>
