@@ -23,5 +23,5 @@ $ ./Build/skeleton
 ```
 
 <p align="center"> 
-<img src="http://g.recordit.co/HvrHPvOW8E.gif">
+<img src="http://g.recordit.co/qPLcikXd3k.gif">
 </p>
